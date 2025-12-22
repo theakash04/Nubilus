@@ -1,0 +1,22 @@
+meta {
+  name: delete api key
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{api}}/org/e1db8eea-b131-4db5-8547-7ff9b4c35ea2/keys/cf4ddbec-b682-48e1-bc81-bb37b223baa2
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Production Agent"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

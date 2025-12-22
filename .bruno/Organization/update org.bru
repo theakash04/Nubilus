@@ -1,0 +1,22 @@
+meta {
+  name: update org
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{api}}/org/e1db8eea-b131-4db5-8547-7ff9b4c35ea2
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "PyxisBlu"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

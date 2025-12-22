@@ -1,0 +1,23 @@
+meta {
+  name: verify session
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api}}/auth/verify
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "otpId": "70c1cf58-4cb1-4725-b3c9-7e0a1bfd3e95",
+    "otp": "132797"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

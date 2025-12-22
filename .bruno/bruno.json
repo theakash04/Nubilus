@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "nubilus",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

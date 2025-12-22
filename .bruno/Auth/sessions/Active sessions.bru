@@ -1,0 +1,20 @@
+meta {
+  name: Active sessions
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api}}/auth/session
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZTk2ZWFiYy0xYzMwLTQ1NzMtOWVjYy02ZjcwYzllMjQ4NmQiLCJ0eXBlIjoic2Vzc2lvbl9tYW5hZ2VtZW50IiwiZW1haWwiOiJha2FzaEBzYnUuYWMuaW4iLCJpYXQiOjE3NjY0MTk2MjYsImV4cCI6MTc2NjQyMDIyNn0.8CFffr7t1GWZqQZ3Y1fxesH5h6CsKqVVG24elEfAbtM
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

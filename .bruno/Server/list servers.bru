@@ -1,0 +1,16 @@
+meta {
+  name: list servers
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api}}/org/e1db8eea-b131-4db5-8547-7ff9b4c35ea2/servers
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

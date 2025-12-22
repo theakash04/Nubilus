@@ -1,0 +1,26 @@
+meta {
+  name: session logout
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{api}}/auth/session/logout
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZTk2ZWFiYy0xYzMwLTQ1NzMtOWVjYy02ZjcwYzllMjQ4NmQiLCJ0eXBlIjoic2Vzc2lvbl9tYW5hZ2VtZW50IiwiZW1haWwiOiJha2FzaEBzYnUuYWMuaW4iLCJpYXQiOjE3NjY0MTk2MjYsImV4cCI6MTc2NjQyMDIyNn0.8CFffr7t1GWZqQZ3Y1fxesH5h6CsKqVVG24elEfAbtM
+}
+
+body:json {
+  {
+    "refreshTokenId": "0278749c-e9b8-4450-8bd1-db05addd4fbb"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
