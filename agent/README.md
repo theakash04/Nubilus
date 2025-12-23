@@ -45,14 +45,15 @@ sudo systemctl enable --now nubilus-agent
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `nubilus-agent run` | Run the agent (default) |
-| `nubilus-agent metrics` | Show current system metrics |
-| `nubilus-agent test` | Test connection to backend |
-| `nubilus-agent update` | Update to latest version |
-| `nubilus-agent configure` | Configure the agent |
-| `nubilus-agent init` | Generate config template |
+| Command                   | Description                 |
+| ------------------------- | --------------------------- |
+| `nubilus-agent run`       | Run the agent (default)     |
+| `nubilus-agent metrics`   | Show current system metrics |
+| `nubilus-agent test`      | Test connection to backend  |
+| `nubilus-agent update`    | Update to latest version    |
+| `nubilus-agent uninstall` | Uninstall the agent         |
+| `nubilus-agent configure` | Configure the agent         |
+| `nubilus-agent init`      | Generate config template    |
 
 ## Update Agent
 
@@ -81,12 +82,12 @@ heartbeat_interval_seconds = 30
 
 ## Metrics Collected
 
-| Category | Metrics |
-|----------|---------|
-| **CPU** | Usage %, core count, load averages |
-| **Memory** | Usage %, total/used/available |
-| **Disk** | Usage %, space, read/write bytes |
-| **Network** | Bytes received/transmitted |
+| Category    | Metrics                            |
+| ----------- | ---------------------------------- |
+| **CPU**     | Usage %, core count, load averages |
+| **Memory**  | Usage %, total/used/available      |
+| **Disk**    | Usage %, space, read/write bytes   |
+| **Network** | Bytes received/transmitted         |
 
 ## Development
 

@@ -73,6 +73,13 @@ enum Commands {
 
     /// Update to the latest version
     Update,
+
+    /// Uninstall the agent from this system
+    Uninstall {
+        /// Keep configuration files
+        #[arg(long)]
+        keep_config: bool,
+    },
 }
 
 #[tokio::main]
@@ -96,6 +103,7 @@ async fn main() -> Result<()> {
         Commands::Test => test_connection(&cli.config).await,
         Commands::Metrics => show_metrics(),
         Commands::Update => update_agent().await,
+        Commands::Uninstall { keep_config } => uninstall_agent(keep_config),
     }
 }
 
@@ -480,4 +488,98 @@ async fn update_agent() -> Result<()> {
     info!("Or if running manually, restart the agent.");
 
     Ok(())
+}
+
+/// Uninstall the agent from this system
+fn uninstall_agent(keep_config: bool) -> Result<()> {
+    use std::process::Command;
+
+    info!("Uninstalling Nubilus Agent...");
+
+    // Check if running as root
+    if !nix_check_root() {
+        error!("This command requires root privileges. Please run with sudo:");
+        error!("  sudo nubilus-agent uninstall");
+        anyhow::bail!("Root privileges required");
+    }
+
+    // 1. Stop the systemd service
+    info!("Stopping systemd service...");
+    let _ = Command::new("systemctl")
+        .args(["stop", "nubilus-agent"])
+        .output();
+    
+    let _ = Command::new("systemctl")
+        .args(["disable", "nubilus-agent"])
+        .output();
+
+    // 2. Remove systemd service file
+    let service_file = "/etc/systemd/system/nubilus-agent.service";
+    if std::path::Path::new(service_file).exists() {
+        info!("Removing systemd service file...");
+        std::fs::remove_file(service_file).ok();
+        let _ = Command::new("systemctl")
+            .arg("daemon-reload")
+            .output();
+    }
+
+    // 3. Remove configuration (unless --keep-config)
+    if !keep_config {
+        let config_dir = "/etc/nubilus";
+        if std::path::Path::new(config_dir).exists() {
+            info!("Removing configuration directory...");
+            std::fs::remove_dir_all(config_dir).ok();
+        }
+    } else {
+        info!("Keeping configuration files at /etc/nubilus");
+    }
+
+    // 4. Get current executable path and schedule removal
+    let current_exe = std::env::current_exe()
+        .unwrap_or_else(|_| std::path::PathBuf::from("/usr/local/bin/nubilus-agent"));
+    
+    info!("Removing binary: {}", current_exe.display());
+    
+    // We can't delete ourselves while running, so we use a trick:
+    // Create a small script that will delete us after we exit
+    let cleanup_script = "/tmp/nubilus-cleanup.sh";
+    let script_content = format!(
+        "#!/bin/bash\nsleep 1\nrm -f \"{}\"\nrm -f \"{}.old\"\nrm -f \"{}\"\n",
+        current_exe.display(),
+        current_exe.display(),
+        cleanup_script
+    );
+    
+    std::fs::write(cleanup_script, script_content).ok();
+    
+    // Make it executable and run it in background
+    let _ = Command::new("chmod")
+        .args(["+x", cleanup_script])
+        .output();
+    
+    let _ = Command::new("bash")
+        .args(["-c", &format!("{} &", cleanup_script)])
+        .spawn();
+
+    info!("");
+    info!("✓ Nubilus Agent has been uninstalled!");
+    if keep_config {
+        info!("  Configuration preserved at /etc/nubilus");
+    }
+    info!("");
+    info!("To reinstall, run:");
+    info!("  curl -sSL https://github.com/theakash04/Nubilus/releases/latest/download/install.sh | sudo bash");
+
+    Ok(())
+}
+
+/// Check if running as root (Unix only)
+#[cfg(unix)]
+fn nix_check_root() -> bool {
+    unsafe { libc::geteuid() == 0 }
+}
+
+#[cfg(not(unix))]
+fn nix_check_root() -> bool {
+    true // Assume ok on non-Unix
 }
