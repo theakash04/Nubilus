@@ -3,7 +3,7 @@ name = "nubilus-agent"
 version = "0.1.3"
 edition = "2025"
 description = "Lightweight monitoring agent for Nubilus platform"
-authors = ["Nubilus Team"]
+authors = ["Sky"]
 license = "MIT"
 
 [[bin]]
