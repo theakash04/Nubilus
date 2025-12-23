@@ -1,0 +1,35 @@
+# Nubilus Agent Configuration
+# Copy this file to /etc/nubilus/agent.toml and edit the values below
+
+[server]
+# URL of your Nubilus backend API
+# For self-hosted: use your own domain
+# For cloud: use https://api.nubilus.io
+api_url = "https://api.nubilus.io"
+
+# Your organization's API key
+# Get this from the Nubilus dashboard under Settings > API Keys
+api_key = "nub_your_api_key_here"
+
+[agent]
+# Friendly name for this server (shown in dashboard)
+# This helps identify your server in the monitoring UI
+name = "my-server-01"
+
+# How often to collect and send metrics (in seconds)
+# Minimum: 10 seconds, Recommended: 30 seconds
+metrics_interval_seconds = 30
+
+# How often to send heartbeat (in seconds)
+# If heartbeats stop, the server will be marked as "inactive"
+# Minimum: 10 seconds, Recommended: 30 seconds
+heartbeat_interval_seconds = 30
+
+[features]
+# Include top process information in metrics
+# This adds CPU/memory usage per process to your metrics
+collect_processes = true
+
+# Enable agent-side HTTP endpoint health checks
+# When enabled, the agent can check local endpoints and report their status
+http_health_checks = false

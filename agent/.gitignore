@@ -1,1 +1,16 @@
+# Build artifacts
 /target
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config (contains secrets)
+agent.toml
