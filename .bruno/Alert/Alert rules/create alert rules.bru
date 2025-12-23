@@ -1,0 +1,20 @@
+meta {
+  name: create alert rules
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api}}/org/:orgId/alert-rules
+  body: json
+  auth: inherit
+}
+
+params:path {
+  orgId: e1db8eea-b131-4db5-8547-7ff9b4c35ea2
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

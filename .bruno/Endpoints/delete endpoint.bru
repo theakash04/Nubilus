@@ -1,0 +1,21 @@
+meta {
+  name: delete endpoint
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{api}}/org/:ordId/endpoints/:endpointId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  ordId: e1db8eea-b131-4db5-8547-7ff9b4c35ea2
+  endpointId: 
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

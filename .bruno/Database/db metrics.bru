@@ -1,0 +1,21 @@
+meta {
+  name: db metrics
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{api}}/org/:orgId/databases/:dbId/metrics
+  body: none
+  auth: inherit
+}
+
+params:path {
+  orgId: e1db8eea-b131-4db5-8547-7ff9b4c35ea2
+  dbId: 
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

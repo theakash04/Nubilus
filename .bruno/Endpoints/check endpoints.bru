@@ -1,0 +1,21 @@
+meta {
+  name: check endpoints
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api}}/org/:orgId/endpoints/:endpointId/checks
+  body: none
+  auth: inherit
+}
+
+params:path {
+  endpointId: 
+  orgId: e1db8eea-b131-4db5-8547-7ff9b4c35ea2
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

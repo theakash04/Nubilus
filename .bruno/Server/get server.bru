@@ -1,0 +1,16 @@
+meta {
+  name: get server
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api}}/org/e1db8eea-b131-4db5-8547-7ff9b4c35ea2/servers/63c43b6a-1652-49b9-9688-872ed43cf004
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

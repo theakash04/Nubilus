@@ -57,7 +57,7 @@ enum Commands {
         api_key: String,
 
         /// Nubilus API URL
-        #[arg(long, default_value = "https://api.nubilus.io")]
+        #[arg(long, default_value = "https://nubilus.akashtwt.me/api")]
         api_url: String,
 
         /// Server name
@@ -70,6 +70,9 @@ enum Commands {
 
     /// Show current system metrics (one-shot)
     Metrics,
+
+    /// Update to the latest version
+    Update,
 }
 
 #[tokio::main]
@@ -92,6 +95,7 @@ async fn main() -> Result<()> {
         }
         Commands::Test => test_connection(&cli.config).await,
         Commands::Metrics => show_metrics(),
+        Commands::Update => update_agent().await,
     }
 }
 
@@ -360,6 +364,8 @@ fn show_metrics() -> Result<()> {
     println!("  Usage: {:.1}%", metrics.disk_usage);
     println!("  Total: {}", format_bytes(metrics.disk_total));
     println!("  Used:  {}", format_bytes(metrics.disk_used));
+    println!("  Read:  {}", format_bytes(metrics.disk_read_bytes));
+    println!("  Write: {}", format_bytes(metrics.disk_write_bytes));
     
     println!("\nNetwork:");
     println!("  Received:    {}", format_bytes(metrics.network_in));
@@ -386,4 +392,92 @@ fn format_bytes(bytes: i64) -> String {
     } else {
         format!("{} B", bytes)
     }
+}
+
+/// Update the agent to the latest version
+async fn update_agent() -> Result<()> {
+    const GITHUB_RELEASE_URL: &str = "https://github.com/theakash04/Nubilus/releases/latest/download";
+    
+    let current_version = env!("CARGO_PKG_VERSION");
+    info!("Current version: v{}", current_version);
+    info!("Checking for updates...");
+
+    // Detect OS and architecture
+    let os = std::env::consts::OS;
+    let arch = std::env::consts::ARCH;
+    
+    let (os_name, arch_name) = match (os, arch) {
+        ("linux", "x86_64") => ("linux", "amd64"),
+        ("linux", "aarch64") => ("linux", "arm64"),
+        ("macos", "x86_64") => ("darwin", "amd64"),
+        ("macos", "aarch64") => ("darwin", "arm64"),
+        _ => {
+            error!("Unsupported platform: {}-{}", os, arch);
+            anyhow::bail!("Unsupported platform: {}-{}", os, arch);
+        }
+    };
+
+    let binary_name = format!("nubilus-agent-{}-{}", os_name, arch_name);
+    let download_url = format!("{}/{}", GITHUB_RELEASE_URL, binary_name);
+    
+    info!("Downloading {} ...", binary_name);
+
+    // Download the new binary
+    let client = reqwest::Client::new();
+    let response = client
+        .get(&download_url)
+        .send()
+        .await
+        .context("Failed to download update")?;
+
+    if !response.status().is_success() {
+        error!("Download failed with status: {}", response.status());
+        anyhow::bail!("Failed to download update: HTTP {}", response.status());
+    }
+
+    let bytes = response.bytes().await.context("Failed to read response body")?;
+    info!("Downloaded {} bytes", bytes.len());
+
+    // Get current executable path
+    let current_exe = std::env::current_exe().context("Failed to get current executable path")?;
+    info!("Current executable: {}", current_exe.display());
+
+    // Create a temporary file for the new binary
+    let temp_path = current_exe.with_extension("new");
+    
+    // Write new binary to temp file
+    std::fs::write(&temp_path, &bytes)
+        .context("Failed to write new binary")?;
+
+    // Make it executable (Unix only)
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&temp_path)?.permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&temp_path, perms)?;
+    }
+
+    // Backup old binary
+    let backup_path = current_exe.with_extension("old");
+    if backup_path.exists() {
+        std::fs::remove_file(&backup_path).ok();
+    }
+    
+    // Replace the current binary
+    // On Unix: rename old -> backup, then new -> current
+    std::fs::rename(&current_exe, &backup_path)
+        .context("Failed to backup current binary. Try running with sudo.")?;
+    
+    std::fs::rename(&temp_path, &current_exe)
+        .context("Failed to install new binary")?;
+
+    info!("✓ Update successful!");
+    info!("");
+    info!("The agent has been updated. Please restart the service:");
+    info!("  sudo systemctl restart nubilus-agent");
+    info!("");
+    info!("Or if running manually, restart the agent.");
+
+    Ok(())
 }

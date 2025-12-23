@@ -1,0 +1,21 @@
+meta {
+  name: update alert rules
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{api}}/org/:orgId/alert-rules/:ruleId
+  body: json
+  auth: inherit
+}
+
+params:path {
+  ruleId: 
+  orgId: e1db8eea-b131-4db5-8547-7ff9b4c35ea2
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
