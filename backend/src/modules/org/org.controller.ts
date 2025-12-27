@@ -8,6 +8,10 @@ import {
   userHasOrgPermission,
 } from "../../db/queries/org";
 import { CreateOrgInput, UpdateOrgInput } from "./org.types";
+import { serverTrends } from "../../db/queries/servers";
+import { endpointTrends } from "../../db/queries/endpoints";
+import { databaseTrends } from "../../db/queries/databases";
+import { alertTrends } from "../../db/queries/alerts";
 
 export async function getMyOrganizations(req: Request, res: Response) {
   const userId = req.user?.userId;
@@ -59,4 +63,30 @@ export async function updateOrg(req: Request, res: Response) {
 
   if (!org) throw new AppError("Organization not found", 404);
   sendResponse(res, 200, "Organization updated", org);
+}
+
+export async function getStats(req: Request, res: Response) {
+  const userId = req.user?.userId;
+  const { orgId } = req.params;
+
+  if (!userId) throw new AppError("Unauthorized", 401);
+  if (!orgId) throw new AppError("Organization ID required", 400);
+
+  const hasAccess = await userHasOrgPermission(userId, orgId, "read");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  // Fetch all trends in parallel
+  const [servers, endpoints, databases, alerts] = await Promise.all([
+    serverTrends(orgId),
+    endpointTrends(orgId),
+    databaseTrends(orgId),
+    alertTrends(orgId),
+  ]);
+
+  sendResponse(res, 200, "Stats history", {
+    servers: servers.map(r => Number(r.count)),
+    endpoints: endpoints.map(r => Number(r.count)),
+    databases: databases.map(r => Number(r.count)),
+    alerts: alerts.map(r => Number(r.count)),
+  });
 }

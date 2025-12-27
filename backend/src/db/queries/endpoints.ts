@@ -114,10 +114,28 @@ export async function insertHealthCheck(data: {
 }): Promise<void> {
   await sql`
     INSERT INTO health_checks (time, endpoint_id, status_code, response_time, is_up, error_message, checked_from)
-    VALUES (NOW(), ${data.endpoint_id}::uuid, ${data.status_code}, ${data.response_time}, ${data.is_up}, ${data.error_message ?? null}, ${data.checked_from ?? null})
+    VALUES (NOW(), ${data.endpoint_id}::uuid, ${data.status_code}, ${data.response_time}, ${
+    data.is_up
+  }, ${data.error_message ?? null}, ${data.checked_from ?? null})
   `;
 
   await sql`
     UPDATE endpoints SET last_checked_at = NOW() WHERE id = ${data.endpoint_id}::uuid
   `;
+}
+
+export async function endpointTrends(orgId: string): Promise<{ hour: Date; count: string }[]> {
+  const trends = await sql<{ hour: Date; count: string }[]>`
+    SELECT 
+      date_trunc('hour', time) as hour,
+      COUNT(DISTINCT hc.endpoint_id) as count
+    FROM health_checks hc
+    INNER JOIN endpoints e ON e.id = hc.endpoint_id
+    WHERE e.org_id = ${orgId}::uuid
+      AND hc.time > NOW() - INTERVAL '7 hours'
+      AND hc.is_up = true
+    GROUP BY hour
+    ORDER BY hour
+  `;
+  return trends;
 }

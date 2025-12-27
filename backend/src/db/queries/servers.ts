@@ -108,3 +108,18 @@ export async function getServerByApiKeyId(apiKeyId: string): Promise<Server | nu
   `;
   return server ?? null;
 }
+
+export async function serverTrends(orgId: string): Promise<{ hour: Date; count: string }[]> {
+  const serverTrends = await sql<{ hour: Date; count: string }[]>`
+    SELECT 
+      date_trunc('hour', time) as hour,
+      COUNT(DISTINCT server_id) as count
+    FROM server_metrics
+    WHERE server_id IN (SELECT id FROM servers WHERE org_id = ${orgId}::uuid)
+      AND time > NOW() - INTERVAL '7 hours'
+    GROUP BY hour
+    ORDER BY hour
+  `;
+
+  return serverTrends;
+}

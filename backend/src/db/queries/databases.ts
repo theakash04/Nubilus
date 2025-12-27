@@ -9,7 +9,10 @@ export async function getDatabaseTargetsByOrgId(orgId: string): Promise<Database
   return targets;
 }
 
-export async function getDatabaseTargetById(id: string, orgId: string): Promise<DatabaseTarget | null> {
+export async function getDatabaseTargetById(
+  id: string,
+  orgId: string
+): Promise<DatabaseTarget | null> {
   const [target] = await sql<DatabaseTarget[]>`
     SELECT * FROM database_targets WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid
   `;
@@ -92,4 +95,20 @@ export async function getDatabaseMetrics(
     LIMIT ${limit}
   `;
   return metrics;
+}
+
+export async function databaseTrends(orgId: string): Promise<{ hour: Date; count: string }[]> {
+  const trends = await sql<{ hour: Date; count: string }[]>`
+    SELECT 
+      date_trunc('hour', time) as hour,
+      COUNT(DISTINCT dm.target_id) as count
+    FROM database_metrics dm
+    INNER JOIN database_targets dt ON dt.id = dm.target_id
+    WHERE dt.org_id = ${orgId}::uuid
+      AND dm.time > NOW() - INTERVAL '7 hours'
+      AND dm.is_healthy = true
+    GROUP BY hour
+    ORDER BY hour
+  `;
+  return trends;
 }

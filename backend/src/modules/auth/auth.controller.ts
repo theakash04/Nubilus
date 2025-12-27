@@ -202,7 +202,7 @@ export async function getActiveSessions(req: Request, res: Response) {
       email: string;
     };
   } catch (error) {
-    console.log(error)
+    console.log(error);
     throw new AppError("Invalid or expired authorization token", 401);
   }
 
@@ -218,7 +218,6 @@ export async function getActiveSessions(req: Request, res: Response) {
     ipAddress: session.ip_address,
     createdAt: session.created_at,
     expiresAt: session.expires_at,
-    // Parse user agent to show friendly device names
     isCurrent: false,
   }));
 
@@ -227,7 +226,7 @@ export async function getActiveSessions(req: Request, res: Response) {
 
 export async function logoutFromSession(req: Request, res: Response) {
   const authHeader = req.headers.authorization;
-  const { refreshTokenId } = req.body;
+  const { sessionId } = req.body;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw new AppError("Authorization token required", 401);
@@ -249,13 +248,13 @@ export async function logoutFromSession(req: Request, res: Response) {
     throw new AppError("Invalid token type", 403);
   }
 
-  if (!refreshTokenId) {
-    throw new AppError("refreshTokenId is required", 400);
+  if (!sessionId) {
+    throw new AppError("sessionId is required", 400);
   }
 
   // Verify session belongs to user
   const activeSessions = await findAllRefreshTokenByUserId(decoded.userId);
-  const session = activeSessions.find(s => s.id === refreshTokenId);
+  const session = activeSessions.find(s => s.id === sessionId);
 
   if (!session) {
     throw new AppError("Session not found or doesn't belong to you", 404);

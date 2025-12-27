@@ -1,6 +1,12 @@
 import sql from "..";
 import { Alert, AlertRule } from "../../types/database";
-import { AlertRuleType, AlertSeverity, AlertStatus, AlertTargetType, ComparisonOperator } from "../../types/enums";
+import {
+  AlertRuleType,
+  AlertSeverity,
+  AlertStatus,
+  AlertTargetType,
+  ComparisonOperator,
+} from "../../types/enums";
 
 export async function getAlertRulesByOrgId(orgId: string): Promise<AlertRule[]> {
   const rules = await sql<AlertRule[]>`
@@ -171,4 +177,19 @@ export async function createAlert(data: {
     RETURNING *
   `;
   return alert;
+}
+
+export async function alertTrends(orgId: string): Promise<{ hour: Date; count: string }[]> {
+  const trends = await sql<{ hour: Date; count: string }[]>`
+    SELECT 
+      date_trunc('hour', fired_at) as hour,
+      COUNT(*) as count
+    FROM alerts
+    WHERE org_id = ${orgId}::uuid
+      AND fired_at > NOW() - INTERVAL '7 hours'
+      AND status = 'firing'
+    GROUP BY hour
+    ORDER BY hour
+  `;
+  return trends;
 }

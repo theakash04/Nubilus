@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 8000;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cors({ origin: "*" }));
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(cookieParser());
 
 app.get("/health", async (_req: Request, res: Response, next: NextFunction) => {
@@ -28,7 +28,7 @@ app.get("/health", async (_req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-app.use("/api", mainRoutes);
+app.use("/api/v1", mainRoutes); // TODO: remove /api when hosted as it wil have auto api if used pyxisblu/api then
 
 app.use((_req, _res, next) => {
   next(new AppError("Route not found", 404));

@@ -26,44 +26,20 @@ export async function getUserById(id: string) {
       created_at: string;
       updated_at: string;
       last_login: string | null;
-      organizations: {
-        id: string;
-        name: string;
-        permissions: string[];
-        status: string;
-        joined_at: string;
-      }[];
     }[]
   >`
-  SELECT 
+  SELECT
     u.id,
     u.name,
     u.email,
     u.is_active,
     u.created_at,
     u.updated_at,
-    u.last_login,
-    
-    COALESCE(
-      json_agg(
-        json_build_object(
-          'id', o.id,
-          'name', o.name,
-          'permissions', ou.permissions,
-          'status', ou.status,
-          'joined_at', ou.joined_at
-        )
-      ) FILTER (WHERE o.id IS NOT NULL),
-      '[]'
-    ) AS organizations
-
+    u.last_login
   FROM users u
-  LEFT JOIN organizations_users ou ON ou.user_id = u.id
-  LEFT JOIN organizations o ON o.id = ou.organization_id
-
-  WHERE u.id = ${id}::uuid
-  GROUP BY u.id;
+  WHERE u.id = ${id}::uuid;
 `;
+
   return user;
 }
 
