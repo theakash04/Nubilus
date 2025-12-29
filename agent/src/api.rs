@@ -58,7 +58,7 @@ impl ApiClient {
 
     /// Register this server with the Nubilus platform
     pub async fn register(&self, request: &RegisterRequest) -> Result<String, ApiError> {
-        let url = format!("{}/api/ingest/register", self.base_url);
+        let url = format!("{}/ingest/register", self.base_url);
         
         debug!("Registering server: {:?}", request);
 
@@ -110,7 +110,7 @@ impl ApiClient {
 
     /// Submit metrics to the Nubilus platform
     pub async fn submit_metrics(&self, metrics: &MetricsPayload) -> Result<(), ApiError> {
-        let url = format!("{}/api/ingest/metrics", self.base_url);
+        let url = format!("{}/ingest/metrics", self.base_url);
         
         debug!("Submitting metrics: CPU={:.1}%, Mem={:.1}%", 
                metrics.cpu_usage, metrics.memory_usage);
@@ -128,7 +128,7 @@ impl ApiClient {
 
     /// Send a heartbeat to keep the server status active
     pub async fn heartbeat(&self) -> Result<(), ApiError> {
-        let url = format!("{}/api/ingest/heartbeat", self.base_url);
+        let url = format!("{}/ingest/heartbeat", self.base_url);
         
         debug!("Sending heartbeat");
 
