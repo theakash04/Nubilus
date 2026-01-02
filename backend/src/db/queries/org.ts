@@ -100,13 +100,16 @@ export async function createOrgInvite({
   inviterId: string;
 }): Promise<{ token: string }> {
   const token = crypto.randomBytes(32).toString("hex");
-  // TODO: make it controllable from the org settings
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
+
+  // Get org settings for invite expiry
+  const orgSettings = await getOrgSettings(orgId);
+  const expiryHours = orgSettings?.invite_expiry_hours ?? 72;
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * expiryHours);
 
   await sql`
     INSERT INTO org_invites (
       id,
-      organization_id,
+      org_id,
       email,
       full_name,
       permissions,
@@ -202,9 +205,162 @@ export async function ListOrgInvites({ orgId, accepted }: { orgId: string; accep
   const invites = await sql`
     SELECT *
     FROM org_invites
-    WHERE org_id = ${orgId}
+    WHERE org_id = ${orgId}::uuid
     ${accepted !== undefined ? sql`AND accepted = ${accepted}` : sql``}
   `;
 
   return invites;
+}
+
+export async function listAllMembers({
+  orgId,
+  status,
+}: {
+  orgId: string;
+  status: "active" | "suspended";
+}) {
+  const users = await sql`
+    SELECT 
+      u.id,
+      u.email,
+      u.name,
+      u.last_login,
+      ou.organization_id,
+      ou.permissions,
+      ou.joined_at,
+      ou.status
+    FROM organizations_users ou JOIN users u ON u.id = ou.user_id
+    WHERE organization_id = ${orgId}::uuid
+    AND status = ${status}
+  `;
+
+  return users;
+}
+
+// Count active members with "manage" permission
+export async function countActiveManagers(orgId: string) {
+  const [result] = await sql`
+    SELECT COUNT(*) as count
+    FROM organizations_users
+    WHERE organization_id = ${orgId}::uuid
+      AND status = 'active'
+      AND 'manage' = ANY(permissions)
+  `;
+  return parseInt(result?.count || "0", 10);
+}
+
+// Get a specific member's permissions
+export async function getMemberPermissions({
+  orgId,
+  userId,
+}: {
+  orgId: string;
+  userId: string;
+}): Promise<string[] | null> {
+  const [result] = await sql`
+    SELECT permissions
+    FROM organizations_users
+    WHERE organization_id = ${orgId}::uuid
+      AND user_id = ${userId}::uuid
+  `;
+  return result?.permissions || null;
+}
+
+// Suspend a member (change status to 'suspended')
+export async function suspendMember({ orgId, userId }: { orgId: string; userId: string }) {
+  await sql`
+    UPDATE organizations_users
+    SET status = 'suspended'
+    WHERE organization_id = ${orgId}::uuid
+      AND user_id = ${userId}::uuid
+  `;
+}
+
+// Update member permissions
+export async function updateMemberPermissions({
+  orgId,
+  userId,
+  permissions,
+}: {
+  orgId: string;
+  userId: string;
+  permissions: string[];
+}) {
+  await sql`
+    UPDATE organizations_users
+    SET permissions = ${permissions}
+    WHERE organization_id = ${orgId}::uuid
+      AND user_id = ${userId}::uuid
+  `;
+}
+
+// Org Settings Types
+export interface OrgSettings {
+  id: string;
+  org_id: string;
+  invite_expiry_hours: number;
+  default_member_permissions: string[];
+  require_2fa: boolean;
+  notify_on_new_member: boolean;
+  notify_on_server_offline: boolean;
+  notify_on_alert_triggered: boolean;
+  webhook_url: string | null;
+  webhook_secret: string | null;
+  webhook_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Get org settings
+export async function getOrgSettings(orgId: string): Promise<OrgSettings> {
+  const [settings] = await sql<OrgSettings[]>`
+    SELECT * FROM org_settings WHERE org_id = ${orgId}::uuid
+  `;
+  return settings;
+}
+
+// Update org settings
+export async function updateOrgSettings({
+  orgId,
+  invite_expiry_hours,
+  default_member_permissions,
+  require_2fa,
+  notify_on_new_member,
+  notify_on_server_offline,
+  notify_on_alert_triggered,
+  webhook_url,
+  webhook_secret,
+  webhook_enabled,
+}: {
+  orgId: string;
+  invite_expiry_hours?: number;
+  default_member_permissions?: string[];
+  require_2fa?: boolean;
+  notify_on_new_member?: boolean;
+  notify_on_server_offline?: boolean;
+  notify_on_alert_triggered?: boolean;
+  webhook_url?: string | null;
+  webhook_secret?: string | null;
+  webhook_enabled?: boolean;
+}) {
+  await sql`
+    UPDATE org_settings
+    SET
+      invite_expiry_hours = COALESCE(${invite_expiry_hours ?? null}, invite_expiry_hours),
+      default_member_permissions = COALESCE(${
+        default_member_permissions ?? null
+      }, default_member_permissions),
+      require_2fa = COALESCE(${require_2fa ?? null}, require_2fa),
+      notify_on_new_member = COALESCE(${notify_on_new_member ?? null}, notify_on_new_member),
+      notify_on_server_offline = COALESCE(${
+        notify_on_server_offline ?? null
+      }, notify_on_server_offline),
+      notify_on_alert_triggered = COALESCE(${
+        notify_on_alert_triggered ?? null
+      }, notify_on_alert_triggered),
+      webhook_url = COALESCE(${webhook_url ?? null}, webhook_url),
+      webhook_secret = COALESCE(${webhook_secret ?? null}, webhook_secret),
+      webhook_enabled = COALESCE(${webhook_enabled ?? null}, webhook_enabled)
+    WHERE org_id = ${orgId}::uuid
+  `;
 }

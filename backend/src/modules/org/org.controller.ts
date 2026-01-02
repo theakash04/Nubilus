@@ -3,12 +3,20 @@ import { AppError, sendResponse } from "../../utils/handler";
 import { sendEmail } from "../../utils/email";
 import {
   acceptOrgInvite,
+  countActiveManagers,
   createOrganization,
   createOrgInvite,
   getOrganizationById,
   getOrganizationsByUserId,
+  getMemberPermissions,
+  listAllMembers,
+  ListOrgInvites,
+  suspendMember,
+  updateMemberPermissions,
   updateOrganization,
   userHasOrgPermission,
+  getOrgSettings,
+  updateOrgSettings,
 } from "../../db/queries/org";
 import { CreateOrgInput, InviteMemberInput, UpdateOrgInput } from "./org.types";
 import { serverTrends } from "../../db/queries/servers";
@@ -167,10 +175,7 @@ export async function acceptInvite(req: Request, res: Response) {
     userId,
   });
 
-  res.json({
-    success: true,
-    mustSetPassword,
-  });
+  sendResponse(res, 200, "Invitation sent successfully", { mustSetPassword });
 }
 
 export async function getAllInvites(req: Request, res: Response) {
@@ -183,5 +188,151 @@ export async function getAllInvites(req: Request, res: Response) {
   const hasAccess = await userHasOrgPermission(userId, orgId, "manage");
   if (!hasAccess) throw new AppError("Access denied", 403);
 
-  
+  const invites = await ListOrgInvites({ orgId, accepted: false });
+
+  sendResponse(res, 200, "Invites retrieved", { invites });
+}
+
+export async function getAllMembers(req: Request, res: Response) {
+  const userId = req.user?.userId;
+  const { orgId } = req.params;
+  const { status } = req.query;
+
+  if (!userId) throw new AppError("Unauthorized", 401);
+  if (!orgId) throw new AppError("Organization ID required", 400);
+
+  const hasAccess = await userHasOrgPermission(userId, orgId, "read");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  const acceptedStatus = ["active", "suspended"];
+  if (!status || typeof status !== "string") {
+    throw new AppError("Status is required. Use 'active' or 'suspended'", 400);
+  }
+  if (!acceptedStatus.includes(status)) {
+    throw new AppError("Invalid status. Only 'active' or 'suspended' allowed", 400);
+  }
+
+  const members = await listAllMembers({ orgId, status: status as "active" | "suspended" });
+
+  sendResponse(res, 200, "Members retrieved", { members });
+}
+
+export async function suspendMemberController(req: Request, res: Response) {
+  const currentUserId = req.user?.userId;
+  const { orgId, userId } = req.params;
+
+  if (!currentUserId) throw new AppError("Unauthorized", 401);
+  if (!orgId) throw new AppError("Organization ID required", 400);
+  if (!userId) throw new AppError("User ID required", 400);
+
+  const hasAccess = await userHasOrgPermission(currentUserId, orgId, "manage");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  // Check if user is trying to suspend themselves
+  if (currentUserId === userId) {
+    throw new AppError("You cannot suspend yourself", 400);
+  }
+
+  // Check if user being suspended has manage permission
+  const targetPermissions = await getMemberPermissions({ orgId, userId });
+  if (targetPermissions?.includes("manage")) {
+    // Count how many active managers exist
+    const managerCount = await countActiveManagers(orgId);
+    if (managerCount <= 1) {
+      throw new AppError("Cannot suspend the last manager of the organization", 400);
+    }
+  }
+
+  await suspendMember({ orgId, userId });
+
+  sendResponse(res, 200, "Member suspended");
+}
+
+export async function updateMemberController(req: Request, res: Response) {
+  const currentUserId = req.user?.userId;
+  const { orgId, userId } = req.params;
+  const { permissions } = req.body;
+
+  if (!currentUserId) throw new AppError("Unauthorized", 401);
+  if (!orgId) throw new AppError("Organization ID required", 400);
+  if (!userId) throw new AppError("User ID required", 400);
+
+  // Check if user is trying to update his own permission
+  if (currentUserId === userId) {
+    throw new AppError("You cannot modify your own permissions", 400);
+  }
+
+  const hasAccess = await userHasOrgPermission(currentUserId, orgId, "manage");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  // Validate permissions array
+  const validPermissions = ["read", "write", "manage"];
+  if (!Array.isArray(permissions) || !permissions.every(p => validPermissions.includes(p))) {
+    throw new AppError("Invalid permissions. Use 'read', 'write', or 'manage'", 400);
+  }
+
+  // If removing manage permission, check if they're the last manager
+  const targetPermissions = await getMemberPermissions({ orgId, userId });
+  if (targetPermissions?.includes("manage") && !permissions.includes("manage")) {
+    const managerCount = await countActiveManagers(orgId);
+    if (managerCount <= 1) {
+      throw new AppError("Cannot remove manage permission from the last manager", 400);
+    }
+  }
+
+  await updateMemberPermissions({ orgId, userId, permissions });
+
+  sendResponse(res, 200, "Member permissions updated");
+}
+
+export async function getAllOrgSettings(req: Request, res: Response) {
+  const currentUserId = req.user?.userId;
+  const { orgId } = req.params;
+
+  if (!currentUserId) throw new AppError("Unauthorized", 401);
+  if (!orgId) throw new AppError("Organization ID required", 400);
+
+  const hasAccess = await userHasOrgPermission(currentUserId, orgId, "manage");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  const settings = await getOrgSettings(orgId);
+
+  sendResponse(res, 200, "Org settings fetched successfully!", settings);
+}
+
+export async function updateOrgSettingsController(req: Request, res: Response) {
+  const currentUserId = req.user?.userId;
+  const { orgId } = req.params;
+  const {
+    invite_expiry_hours,
+    default_member_permissions,
+    require_2fa,
+    notify_on_new_member,
+    notify_on_server_offline,
+    notify_on_alert_triggered,
+    webhook_url,
+    webhook_secret,
+    webhook_enabled,
+  } = req.body;
+
+  if (!currentUserId) throw new AppError("Unauthorized", 401);
+  if (!orgId) throw new AppError("Organization ID required", 400);
+
+  const hasAccess = await userHasOrgPermission(currentUserId, orgId, "manage");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  await updateOrgSettings({
+    orgId,
+    invite_expiry_hours,
+    default_member_permissions,
+    require_2fa,
+    notify_on_new_member,
+    notify_on_server_offline,
+    notify_on_alert_triggered,
+    webhook_url,
+    webhook_secret,
+    webhook_enabled,
+  });
+
+  sendResponse(res, 200, "Settings updated successfully");
 }

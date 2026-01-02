@@ -27,6 +27,9 @@ const AuthenticatedDashboardOrgIdIndexLazyRouteImport = createFileRoute(
 const AuthenticatedDashboardOrgIdUsersLazyRouteImport = createFileRoute(
   '/_authenticated/dashboard/$orgId/users',
 )()
+const AuthenticatedDashboardOrgIdSettingsLazyRouteImport = createFileRoute(
+  '/_authenticated/dashboard/$orgId/settings',
+)()
 const AuthenticatedDashboardOrgIdServersLazyRouteImport = createFileRoute(
   '/_authenticated/dashboard/$orgId/servers',
 )()
@@ -93,6 +96,16 @@ const AuthenticatedDashboardOrgIdUsersLazyRoute =
       (d) => d.Route,
     ),
   )
+const AuthenticatedDashboardOrgIdSettingsLazyRoute =
+  AuthenticatedDashboardOrgIdSettingsLazyRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedDashboardOrgIdRoute,
+  } as any).lazy(() =>
+    import('./routes/_authenticated/dashboard/$orgId/settings.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 const AuthenticatedDashboardOrgIdServersLazyRoute =
   AuthenticatedDashboardOrgIdServersLazyRouteImport.update({
     id: '/servers',
@@ -153,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/$orgId/endpoints': typeof AuthenticatedDashboardOrgIdEndpointsLazyRoute
   '/dashboard/$orgId/keys': typeof AuthenticatedDashboardOrgIdKeysLazyRoute
   '/dashboard/$orgId/servers': typeof AuthenticatedDashboardOrgIdServersLazyRoute
+  '/dashboard/$orgId/settings': typeof AuthenticatedDashboardOrgIdSettingsLazyRoute
   '/dashboard/$orgId/users': typeof AuthenticatedDashboardOrgIdUsersLazyRoute
   '/dashboard/$orgId/': typeof AuthenticatedDashboardOrgIdIndexLazyRoute
   '/dashboard/$orgId/server/$serverId': typeof AuthenticatedDashboardOrgIdServerServerIdLazyRoute
@@ -165,6 +179,7 @@ export interface FileRoutesByTo {
   '/dashboard/$orgId/endpoints': typeof AuthenticatedDashboardOrgIdEndpointsLazyRoute
   '/dashboard/$orgId/keys': typeof AuthenticatedDashboardOrgIdKeysLazyRoute
   '/dashboard/$orgId/servers': typeof AuthenticatedDashboardOrgIdServersLazyRoute
+  '/dashboard/$orgId/settings': typeof AuthenticatedDashboardOrgIdSettingsLazyRoute
   '/dashboard/$orgId/users': typeof AuthenticatedDashboardOrgIdUsersLazyRoute
   '/dashboard/$orgId': typeof AuthenticatedDashboardOrgIdIndexLazyRoute
   '/dashboard/$orgId/server/$serverId': typeof AuthenticatedDashboardOrgIdServerServerIdLazyRoute
@@ -180,6 +195,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard/$orgId/endpoints': typeof AuthenticatedDashboardOrgIdEndpointsLazyRoute
   '/_authenticated/dashboard/$orgId/keys': typeof AuthenticatedDashboardOrgIdKeysLazyRoute
   '/_authenticated/dashboard/$orgId/servers': typeof AuthenticatedDashboardOrgIdServersLazyRoute
+  '/_authenticated/dashboard/$orgId/settings': typeof AuthenticatedDashboardOrgIdSettingsLazyRoute
   '/_authenticated/dashboard/$orgId/users': typeof AuthenticatedDashboardOrgIdUsersLazyRoute
   '/_authenticated/dashboard/$orgId/': typeof AuthenticatedDashboardOrgIdIndexLazyRoute
   '/_authenticated/dashboard/$orgId/server/$serverId': typeof AuthenticatedDashboardOrgIdServerServerIdLazyRoute
@@ -195,6 +211,7 @@ export interface FileRouteTypes {
     | '/dashboard/$orgId/endpoints'
     | '/dashboard/$orgId/keys'
     | '/dashboard/$orgId/servers'
+    | '/dashboard/$orgId/settings'
     | '/dashboard/$orgId/users'
     | '/dashboard/$orgId/'
     | '/dashboard/$orgId/server/$serverId'
@@ -207,6 +224,7 @@ export interface FileRouteTypes {
     | '/dashboard/$orgId/endpoints'
     | '/dashboard/$orgId/keys'
     | '/dashboard/$orgId/servers'
+    | '/dashboard/$orgId/settings'
     | '/dashboard/$orgId/users'
     | '/dashboard/$orgId'
     | '/dashboard/$orgId/server/$serverId'
@@ -221,6 +239,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard/$orgId/endpoints'
     | '/_authenticated/dashboard/$orgId/keys'
     | '/_authenticated/dashboard/$orgId/servers'
+    | '/_authenticated/dashboard/$orgId/settings'
     | '/_authenticated/dashboard/$orgId/users'
     | '/_authenticated/dashboard/$orgId/'
     | '/_authenticated/dashboard/$orgId/server/$serverId'
@@ -282,6 +301,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardOrgIdUsersLazyRouteImport
       parentRoute: typeof AuthenticatedDashboardOrgIdRoute
     }
+    '/_authenticated/dashboard/$orgId/settings': {
+      id: '/_authenticated/dashboard/$orgId/settings'
+      path: '/settings'
+      fullPath: '/dashboard/$orgId/settings'
+      preLoaderRoute: typeof AuthenticatedDashboardOrgIdSettingsLazyRouteImport
+      parentRoute: typeof AuthenticatedDashboardOrgIdRoute
+    }
     '/_authenticated/dashboard/$orgId/servers': {
       id: '/_authenticated/dashboard/$orgId/servers'
       path: '/servers'
@@ -325,6 +351,7 @@ interface AuthenticatedDashboardOrgIdRouteChildren {
   AuthenticatedDashboardOrgIdEndpointsLazyRoute: typeof AuthenticatedDashboardOrgIdEndpointsLazyRoute
   AuthenticatedDashboardOrgIdKeysLazyRoute: typeof AuthenticatedDashboardOrgIdKeysLazyRoute
   AuthenticatedDashboardOrgIdServersLazyRoute: typeof AuthenticatedDashboardOrgIdServersLazyRoute
+  AuthenticatedDashboardOrgIdSettingsLazyRoute: typeof AuthenticatedDashboardOrgIdSettingsLazyRoute
   AuthenticatedDashboardOrgIdUsersLazyRoute: typeof AuthenticatedDashboardOrgIdUsersLazyRoute
   AuthenticatedDashboardOrgIdIndexLazyRoute: typeof AuthenticatedDashboardOrgIdIndexLazyRoute
   AuthenticatedDashboardOrgIdServerServerIdLazyRoute: typeof AuthenticatedDashboardOrgIdServerServerIdLazyRoute
@@ -340,6 +367,8 @@ const AuthenticatedDashboardOrgIdRouteChildren: AuthenticatedDashboardOrgIdRoute
       AuthenticatedDashboardOrgIdKeysLazyRoute,
     AuthenticatedDashboardOrgIdServersLazyRoute:
       AuthenticatedDashboardOrgIdServersLazyRoute,
+    AuthenticatedDashboardOrgIdSettingsLazyRoute:
+      AuthenticatedDashboardOrgIdSettingsLazyRoute,
     AuthenticatedDashboardOrgIdUsersLazyRoute:
       AuthenticatedDashboardOrgIdUsersLazyRoute,
     AuthenticatedDashboardOrgIdIndexLazyRoute:

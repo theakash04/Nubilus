@@ -54,6 +54,9 @@ function App() {
   return (
     <AuthLayout title={"Sign in to your account"} subtitle={undefined}>
       <form onSubmit={handleLogin} className="space-y-6">
+        {error && (
+          <p className="text-sm text-center text-destructive">{error}</p>
+        )}
         <Input
           label="Email Address"
           type="email"
@@ -70,8 +73,6 @@ function App() {
           placeholder="••••••••"
           required
         />
-
-        {error && <p className="text-sm text-rose-600">{error}</p>}
 
         <Button
           className="w-full flex justify-center py-2.5 shadow-lg shadow-primary-500/20 cursor-pointer"

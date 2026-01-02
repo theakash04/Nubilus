@@ -1,30 +1,25 @@
 import { useLogout, useUser } from "@/hooks/useAuthActions";
 import { useTheme } from "@/hooks/useTheme";
 import { ListMyOrgs, createOrg } from "@/lib/api/organizations.api";
+import { getNavItemsForOrg, routeLabels } from "@/lib/config/navigation";
 import type { Organization } from "@/lib/types/org.types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   CloudLightning,
-  Database,
-  Globe,
-  Key,
-  LayoutDashboard,
   LogOut,
   Menu,
   Moon,
   Plus,
   Search,
-  Server,
   Sun,
-  Users,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Modal } from "../ui/Modal";
@@ -53,6 +48,7 @@ export const AppLayout: React.FC<{
   const orgMenuRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme, setUserTheme, currentTheme } = useTheme();
 
   // Fetch organizations from TanStack Query (same cache as dashboard)
@@ -72,6 +68,62 @@ export const AppLayout: React.FC<{
   const currentOrganization = orgId
     ? organizations.find((org) => org.id === orgId)
     : organizations[0];
+
+  // Generate breadcrumbs from current path
+  const breadcrumbs = useMemo(() => {
+    const pathSegments = location.pathname.split("/").filter(Boolean);
+    const items: { label: string; href: string; isLast: boolean }[] = [];
+
+    let currentPath = "";
+    for (let i = 0; i < pathSegments.length; i++) {
+      const segment = pathSegments[i];
+      currentPath += `/${segment}`;
+
+      // Skip if segment is "dashboard" and we're at index 0 (will add it specially)
+      if (i === 0 && segment === "dashboard") {
+        items.push({
+          label: "Dashboard",
+          href: "/dashboard",
+          isLast: pathSegments.length === 1,
+        });
+        continue;
+      }
+
+      // Check if this segment is the orgId
+      if (segment === orgId && currentOrganization) {
+        items.push({
+          label: currentOrganization.name,
+          href: `/dashboard/${orgId}`,
+          isLast: i === pathSegments.length - 1,
+        });
+        continue;
+      }
+
+      // Check if it's a known label
+      const label = routeLabels[segment];
+      if (label) {
+        items.push({
+          label,
+          href: currentPath,
+          isLast: i === pathSegments.length - 1,
+        });
+        continue;
+      }
+
+      // For other IDs (like serverId), show truncated version or skip
+      // You could enhance this to fetch server name, etc.
+      if (segment.length > 20) {
+        // Likely a UUID, skip or show as "Details"
+        items.push({
+          label: "Details",
+          href: currentPath,
+          isLast: i === pathSegments.length - 1,
+        });
+      }
+    }
+
+    return items;
+  }, [location.pathname, orgId, currentOrganization]);
 
   // Close org menu on click outside
   useEffect(() => {
@@ -115,14 +167,8 @@ export const AppLayout: React.FC<{
     }
   };
 
-  const navItems = [
-    { to: `/dashboard/${orgId}`, icon: LayoutDashboard, label: "Dashboard" },
-    { to: `/dashboard/${orgId}/servers`, icon: Server, label: "Servers" },
-    { to: `/dashboard/${orgId}/endpoints`, icon: Globe, label: "Endpoints" },
-    { to: `/dashboard/${orgId}/databases`, icon: Database, label: "Databases" },
-    { to: `/dashboard/${orgId}/keys`, icon: Key, label: "API Keys" },
-    { to: `/dashboard/${orgId}/users`, icon: Users, label: "Members" },
-  ];
+  // Get nav items for current org from centralized config
+  const navItems = getNavItemsForOrg(orgId || "");
 
   const SidebarContent = ({ isMobile = false }) => (
     <>
@@ -368,17 +414,29 @@ export const AppLayout: React.FC<{
           </div>
         </header>
 
-        {/* Desktop Top Bar (Optional, for search/breadcrumbs if needed, mostly hidden in design for cleaner look, but good for structure) */}
-        <div className="hidden lg:flex h-16 items-center justify-between px-8 border-b border-border bg-background">
-          <div className="text-sm font-medium text-muted-foreground flex items-center">
-            <Link to="/dashboard">
-              <span className="hover:text-foreground cursor-pointer transition-colors">
-                Dashboard
-              </span>
-            </Link>
-            <span className="mx-2 text-muted-foreground">/</span>
-            <span className="text-foreground">{currentOrganization?.name}</span>
-          </div>
+        {/* Desktop Top Bar with Dynamic Breadcrumbs */}
+        <div className="hidden lg:flex h-14 items-center justify-between px-8 border-b border-border bg-background/50">
+          <nav className="flex items-center text-sm font-medium">
+            {breadcrumbs.map((crumb, index) => (
+              <div key={crumb.href} className="flex items-center">
+                {index > 0 && (
+                  <ChevronRight className="h-4 w-4 mx-2 text-muted-foreground/50" />
+                )}
+                {crumb.isLast ? (
+                  <span className="text-foreground font-semibold">
+                    {crumb.label}
+                  </span>
+                ) : (
+                  <Link
+                    to={crumb.href}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {crumb.label}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </nav>
         </div>
 
         <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8 w-full mx-auto">

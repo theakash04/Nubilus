@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 
 import * as TanStackQueryProvider from "./integrations/tanstack-query/root-provider.tsx";
+import { ToastProvider } from "./components/ui/Toast.tsx";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen.ts";
@@ -38,13 +39,15 @@ if (rootElement && !rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <TanStackQueryProvider.Provider {...TanStackQueryProviderContext}>
-        <RouterProvider router={router} />
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
       </TanStackQueryProvider.Provider>
     </StrictMode>
   );
 }
 
-// If you want to start measuring performance in your app, pass a function
+// If you want to start measuring performance in your app, pass a function q
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+reportWebVitals(console.log);

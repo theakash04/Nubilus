@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 import {
   useApiKeys,
   useCreateApiKey,
@@ -28,6 +29,7 @@ function RouteComponent() {
   const { data: apiKeysData, isLoading, error } = useApiKeys(orgId);
   const createApiKeyMutation = useCreateApiKey(orgId);
   const deleteApiKeyMutation = useDeleteApiKey(orgId);
+  const toast = useToast();
 
   const apiKeys = apiKeysData?.data?.keys ?? [];
 
@@ -38,13 +40,34 @@ function RouteComponent() {
         onSuccess: (data) => {
           setNewKey(data.data.key);
           setKeyName("");
+          toast.success(
+            "API key created",
+            "Copy it now, you won't see it again."
+          );
+        },
+        onError: (error: any) => {
+          toast.error(
+            "Failed to create",
+            error?.response?.data?.message || "Something went wrong."
+          );
         },
       }
     );
   };
 
-  const handleDelete = (keyId: string) => {
-    deleteApiKeyMutation.mutate(keyId);
+  const handleDelete = (keyId: string, keyName: string) => {
+    if (!confirm(`Revoke API key "${keyName}"? This cannot be undone.`)) return;
+    deleteApiKeyMutation.mutate(keyId, {
+      onSuccess: () => {
+        toast.success("API key revoked", `"${keyName}" has been revoked.`);
+      },
+      onError: (error: any) => {
+        toast.error(
+          "Failed to revoke",
+          error?.response?.data?.message || "Something went wrong."
+        );
+      },
+    });
   };
 
   const handleClose = () => {
@@ -121,7 +144,7 @@ function RouteComponent() {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="w-full flex items-center-safe justify-end">
                       <button
-                        onClick={() => handleDelete(key.id)}
+                        onClick={() => handleDelete(key.id, key.name)}
                         disabled={
                           deleteApiKeyMutation.isPending || !key.is_active
                         }

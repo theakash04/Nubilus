@@ -1,6 +1,3 @@
-// get user details from env
-// create|seed user into db
-import { SignUpUser } from "../types/database";
 import dotenv from "dotenv";
 import { createNewUser } from "./queries/users";
 import bcrypt from "bcrypt";

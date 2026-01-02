@@ -30,13 +30,9 @@ function RouteComponent() {
   }
 
   return (
-    <>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Servers</h1>
-      </div>
-
+    <div className="h-full">
       {servers.length === 0 ? (
-        <Card className="p-12 text-center">
+        <div className="text-center flex flex-col items-center justify-center h-full">
           <div className="p-4 rounded-full bg-muted w-fit mx-auto mb-4">
             <Server className="h-8 w-8 text-muted-foreground" />
           </div>
@@ -46,7 +42,7 @@ function RouteComponent() {
           <p className="text-sm text-muted-foreground mb-6">
             Install the agent on your first server to see metrics here.
           </p>
-        </Card>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {servers.map((server) => {
@@ -86,6 +82,6 @@ function RouteComponent() {
           })}
         </div>
       )}
-    </>
+    </div>
   );
 }
