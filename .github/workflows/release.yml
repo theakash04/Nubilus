@@ -34,6 +34,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Sync version from git tag
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Syncing Cargo.toml version to $VERSION"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" agent/Cargo.toml
+          head -5 agent/Cargo.toml
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -83,6 +90,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Sync version from git tag
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Syncing Cargo.toml version to $VERSION"
+          sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" agent/Cargo.toml
+          head -5 agent/Cargo.toml
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
