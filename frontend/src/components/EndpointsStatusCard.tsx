@@ -21,18 +21,18 @@ export function EndpointsStatusCard({
       case "unhealthy":
         return "bg-rose-500";
       default:
-        return "bg-slate-400";
+        return "bg-muted-foreground";
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "healthy":
-        return "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/20";
+        return "text-emerald-500 bg-emerald-500/10";
       case "unhealthy":
-        return "text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-900/20";
+        return "text-rose-500 bg-rose-500/10";
       default:
-        return "text-slate-600 bg-slate-50 dark:text-slate-400 dark:bg-slate-800";
+        return "text-muted-foreground bg-muted";
     }
   };
 
@@ -40,22 +40,22 @@ export function EndpointsStatusCard({
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
-          <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
-            <CloudLightning className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <div className="p-2 rounded-lg bg-emerald-500/10">
+            <CloudLightning className="h-4 w-4 text-emerald-500" />
           </div>
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wide">
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
             Endpoint Status
           </h3>
         </div>
-        <span className="text-xs text-slate-400">Top {limit}</span>
+        <span className="text-xs text-muted-foreground">Top {limit}</span>
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : endpoints.length === 0 ? (
-        <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-sm">
+        <div className="text-center py-8 text-muted-foreground text-sm">
           No endpoints configured
         </div>
       ) : (
@@ -63,17 +63,17 @@ export function EndpointsStatusCard({
           {endpoints.map((endpoint) => (
             <div
               key={endpoint.id}
-              className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
             >
               <div className="flex items-center space-x-3 min-w-0 flex-1">
                 <span
                   className={`w-2 h-2 rounded-full shrink-0 ${getStatusColor(endpoint.status)}`}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {endpoint.name}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {endpoint.url}
                   </p>
                 </div>
@@ -84,7 +84,7 @@ export function EndpointsStatusCard({
                 >
                   {endpoint.status}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                <span className="text-xs text-muted-foreground font-mono">
                   {endpoint.method}
                 </span>
               </div>

@@ -16,9 +16,25 @@ export async function getServer(orgId: string, serverId: string) {
   return res.data;
 }
 
-export async function getServerMetrics(orgId: string, serverId: string) {
-  const res = await api.get<ApiResponse<{ metrics: ServerMetric[] }>>(
-    `/org/${orgId}/servers/${serverId}/metrics`
-  );
+export interface MetricsQueryParams {
+  from?: string;
+  to?: string;
+  limit?: number;
+}
+
+export async function getServerMetrics(
+  orgId: string,
+  serverId: string,
+  params?: MetricsQueryParams
+) {
+  const searchParams = new URLSearchParams();
+  if (params?.from) searchParams.set("from", params.from);
+  if (params?.to) searchParams.set("to", params.to);
+  if (params?.limit) searchParams.set("limit", String(params.limit));
+
+  const queryString = searchParams.toString();
+  const url = `/org/${orgId}/servers/${serverId}/metrics${queryString ? `?${queryString}` : ""}`;
+
+  const res = await api.get<ApiResponse<{ metrics: ServerMetric[] }>>(url);
   return res.data;
 }

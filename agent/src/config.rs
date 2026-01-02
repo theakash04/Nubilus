@@ -98,7 +98,7 @@ impl Config {
 
 [server]
 # URL of your Nubilus backend API
-api_url = "https://api.nubilus.io"
+api_url = "http://localhost:8080"
 # Your organization's API key (from the dashboard)
 api_key = "nub_your_api_key_here"
 

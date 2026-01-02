@@ -57,7 +57,7 @@ enum Commands {
         api_key: String,
 
         /// Nubilus API URL
-        #[arg(long, default_value = "https://nubilus.akashtwt.me/api")]
+        #[arg(long, default_value = "http://localhost:8080/api")]
         api_url: String,
 
         /// Server name

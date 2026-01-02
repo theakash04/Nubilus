@@ -10,11 +10,17 @@ import type {
   DatabaseTarget,
 } from "@/lib/types/monitoring.types";
 
-export function isServerOnline(server: Server): boolean {
-  if (!server.lastSeenAt) return false;
-  const lastSeen = new Date(server.lastSeenAt);
-  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-  return lastSeen.getTime() > fiveMinutesAgo;
+// Default threshold: 5 minutes (300 seconds)
+const DEFAULT_OFFLINE_THRESHOLD_SECONDS = 300;
+
+export function isServerOnline(
+  server: Server,
+  thresholdSeconds: number = DEFAULT_OFFLINE_THRESHOLD_SECONDS
+): boolean {
+  if (!server.last_seen_at) return false;
+  const lastSeen = new Date(server.last_seen_at);
+  const thresholdMs = thresholdSeconds * 1000;
+  return lastSeen.getTime() > Date.now() - thresholdMs;
 }
 
 export type SystemStatus = "operational" | "degraded" | "outage";
@@ -23,9 +29,12 @@ export function getSystemStatus(
   servers: Server[],
   endpoints: Endpoint[],
   databases: DatabaseTarget[],
-  activeAlertsCount: number
+  activeAlertsCount: number,
+  offlineThresholdSeconds: number = DEFAULT_OFFLINE_THRESHOLD_SECONDS
 ): SystemStatus {
-  const onlineServers = servers.filter(isServerOnline).length;
+  const onlineServers = servers.filter((s) =>
+    isServerOnline(s, offlineThresholdSeconds)
+  ).length;
   const healthyEndpoints = endpoints.filter(
     (e) => e.status === "healthy"
   ).length;
@@ -49,7 +58,10 @@ export function getSystemStatus(
   return "operational";
 }
 
-export function useDashboardStats(orgId: string) {
+export function useDashboardStats(
+  orgId: string,
+  offlineThresholdSeconds: number = DEFAULT_OFFLINE_THRESHOLD_SECONDS
+) {
   const serversQuery = useServers(orgId);
   const endpointsQuery = useEndpoints(orgId);
   const databasesQuery = useDatabases(orgId);
@@ -78,7 +90,9 @@ export function useDashboardStats(orgId: string) {
 
   const stats = {
     totalServers: servers.length,
-    onlineServers: servers.filter(isServerOnline).length,
+    onlineServers: servers.filter((s) =>
+      isServerOnline(s, offlineThresholdSeconds)
+    ).length,
     healthyEndpoints: endpoints.filter((e) => e.status === "healthy").length,
     totalEndpoints: endpoints.length,
     databaseTargets: databases.length,
@@ -111,7 +125,8 @@ export function useDashboardStats(orgId: string) {
     servers,
     endpoints,
     databases,
-    activeAlerts.length
+    activeAlerts.length,
+    offlineThresholdSeconds
   );
 
   return {

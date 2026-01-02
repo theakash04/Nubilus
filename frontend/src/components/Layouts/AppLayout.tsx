@@ -1,11 +1,10 @@
-import { useUser, useLogout } from "@/hooks/useAuthActions";
+import { useLogout, useUser } from "@/hooks/useAuthActions";
 import { useTheme } from "@/hooks/useTheme";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListMyOrgs, createOrg } from "@/lib/api/organizations.api";
 import type { Organization } from "@/lib/types/org.types";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
-  Bell,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -26,9 +25,9 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
+import { Modal } from "../ui/Modal";
 import NavItem from "./NavLayout";
 
 export const AppLayout: React.FC<{
@@ -129,39 +128,39 @@ export const AppLayout: React.FC<{
     <>
       {/* Org Switcher Header */}
       <div
-        className={`h-16 flex items-center border-b border-slate-100 dark:border-slate-800 transition-all duration-300 relative z-20 ${sidebarCollapsed && !isMobile ? "justify-center px-0" : "px-4"}`}
+        className={`h-16 flex items-center border-b border-border transition-all duration-300 relative z-20 ${sidebarCollapsed && !isMobile ? "justify-center px-0" : "px-4"}`}
       >
         <div className="w-full" ref={orgMenuRef}>
           <button
             onClick={() =>
               (!sidebarCollapsed || isMobile) && setOrgMenuOpen(!orgMenuOpen)
             }
-            className={`flex items-center w-full cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-1.5 rounded-lg transition-colors group ${sidebarCollapsed && !isMobile ? "justify-center cursor-default" : "justify-between"}`}
+            className={`flex items-center w-full cursor-pointer hover:bg-accent hover:text-accent-foreground p-1.5 rounded-lg transition-colors group ${sidebarCollapsed && !isMobile ? "justify-center cursor-default" : "justify-between"}`}
           >
             <div className="flex items-center min-w-0">
-              <div className="h-8 w-8 bg-linear-to-br from-primary-500 to-primary-600 rounded-lg shadow-sm flex items-center justify-center shrink-0 text-white">
+              <div className="h-8 w-8 bg-primary rounded-lg shadow-sm flex items-center justify-center shrink-0 text-primary-foreground">
                 <span className="font-bold text-sm">
                   {currentOrganization?.name.charAt(0)}
                 </span>
               </div>
               {(!sidebarCollapsed || isMobile) && (
                 <div className="ml-3 text-left min-w-0">
-                  <span className="block text-sm font-semibold text-slate-900 dark:text-white truncate">
+                  <span className="block text-sm font-semibold text-foreground truncate">
                     {currentOrganization?.name || "Nubilus"}
                   </span>
                 </div>
               )}
             </div>
             {(!sidebarCollapsed || isMobile) && (
-              <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors cursor-pointer" />
             )}
           </button>
 
           {/* Dropdown Menu */}
           {orgMenuOpen && (!sidebarCollapsed || isMobile) && (
-            <div className="absolute top-full left-2 right-2 mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-50">
+            <div className="absolute top-full left-2 right-2 mt-2 bg-popover text-popover-foreground rounded-xl shadow-xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-150 z-50">
               <div className="py-1">
-                <div className="px-3 py-2 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                <div className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                   Organizations
                 </div>
                 {organizations.map((org) => (
@@ -174,23 +173,23 @@ export const AppLayout: React.FC<{
                       });
                       setOrgMenuOpen(false);
                     }}
-                    className="w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 group cursor-pointer"
+                    className="w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-accent hover:text-accent-foreground text-foreground group cursor-pointer"
                   >
                     <div className="flex items-center">
-                      <div className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-500 mr-2 group-hover:bg-white dark:group-hover:bg-slate-700">
+                      <div className="w-5 h-5 rounded bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground mr-2 group-hover:bg-background">
                         {org.name.charAt(0)}
                       </div>
                       <span className="truncate">{org.name}</span>
                     </div>
                     {currentOrganization?.id === org.id && (
-                      <Check className="h-3.5 w-3.5 text-primary-500" />
+                      <Check className="h-3.5 w-3.5 text-primary" />
                     )}
                   </button>
                 ))}
-                <div className="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                <div className="border-t border-border my-1"></div>
                 <button
                   onClick={() => setIsCreateOrgModalOpen(true)}
-                  className="w-full text-left px-3 py-2 text-sm flex items-center text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="w-full text-left px-3 py-2 text-sm flex items-center text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Organization
@@ -237,7 +236,7 @@ export const AppLayout: React.FC<{
       </div>
 
       {/* User Footer */}
-      <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+      <div className="p-4 border-t border-border">
         <div
           className={`flex items-center ${sidebarCollapsed && !isMobile ? "justify-center flex-col space-y-4" : "justify-between"}`}
         >
@@ -247,13 +246,13 @@ export const AppLayout: React.FC<{
               className="shrink-0"
               onClick={() => isMobile && setMobileMenuOpen(false)}
             >
-              <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-xs border border-white dark:border-slate-700 shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-xs border border-background shadow-sm">
                 {user?.name?.charAt(0) || "U"}
               </div>
             </Link>
             {(!sidebarCollapsed || isMobile) && (
               <div className="min-w-0">
-                <p className="text-sm font-medium text-slate-900 dark:text-white truncate max-w-[100px]">
+                <p className="text-sm font-medium text-foreground truncate max-w-[100px]">
                   {user?.name}
                 </p>
               </div>
@@ -267,7 +266,7 @@ export const AppLayout: React.FC<{
               onClick={() =>
                 setUserTheme(currentTheme === "dark" ? "light" : "dark")
               }
-              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors cursor-pointer"
             >
               {theme === "dark" ? (
                 <Sun className="h-4 w-4" />
@@ -277,7 +276,7 @@ export const AppLayout: React.FC<{
             </button>
             <button
               onClick={handleLogout}
-              className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-md hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors cursor-pointer"
+              className="p-1.5 text-muted-foreground hover:text-destructive rounded-md hover:bg-destructive/10 transition-colors cursor-pointer"
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -288,19 +287,19 @@ export const AppLayout: React.FC<{
   );
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 flex transition-colors duration-200">
+    <div className="min-h-screen bg-background flex transition-colors duration-200">
       {/* Mobile Menu Backdrop & Drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
           ></div>
-          <div className="fixed inset-y-0 left-0 w-72 bg-white dark:bg-slate-900 shadow-2xl transform transition-transform duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800 flex flex-col">
+          <div className="fixed inset-y-0 left-0 w-72 bg-background shadow-2xl transform transition-transform duration-300 ease-in-out border-r border-border flex flex-col">
             <div className="absolute top-4 right-4">
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                className="p-2 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -312,7 +311,7 @@ export const AppLayout: React.FC<{
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden lg:flex lg:flex-col fixed inset-y-0 left-0 z-40 bg-slate-50/50 dark:bg-slate-950/50 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${
+        className={`hidden lg:flex lg:flex-col fixed inset-y-0 left-0 z-40 bg-muted/30 backdrop-blur-xl border-r border-border transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${
           sidebarCollapsed ? "w-20" : "w-64"
         }`}
       >
@@ -321,7 +320,7 @@ export const AppLayout: React.FC<{
         {/* Collapse Toggle */}
         <button
           onClick={toggleSidebar}
-          className="absolute -right-3 top-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shadow-sm hover:shadow-md transition-all z-50 hidden lg:flex"
+          className="absolute -right-3 top-20 bg-background border border-border rounded-full p-1 text-muted-foreground hover:text-foreground shadow-sm hover:shadow-md transition-all z-50 hidden lg:flex cursor-pointer"
         >
           {sidebarCollapsed ? (
             <ChevronRight className="h-3 w-3" />
@@ -336,32 +335,32 @@ export const AppLayout: React.FC<{
         className={`flex flex-col flex-1 w-full min-h-screen transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${sidebarCollapsed ? "lg:pl-20" : "lg:pl-64"}`}
       >
         {/* Mobile / Tablet Header */}
-        <header className="sticky top-0 z-30 flex h-16 bg-white/80 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 shadow-sm backdrop-blur-md lg:hidden">
+        <header className="sticky top-0 z-30 flex h-16 bg-background/80 border-b border-border shadow-sm backdrop-blur-md lg:hidden">
           <div className="flex-1 flex justify-between items-center px-4">
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 -ml-2 text-muted-foreground hover:bg-accent rounded-lg transition-colors"
                 onClick={() => setMobileMenuOpen(true)}
               >
                 <Menu className="h-6 w-6" />
               </button>
               <div className="flex items-center gap-2">
-                <div className="h-8 w-8 bg-linear-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center text-white">
+                <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
                   <CloudLightning className="h-5 w-5" />
                 </div>
-                <span className="text-lg font-bold text-slate-900 dark:text-white">
+                <span className="text-lg font-bold text-foreground">
                   Nubilus
                 </span>
               </div>
             </div>
 
             <div className="flex items-center space-x-2">
-              <button className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+              <button className="p-2 text-muted-foreground hover:text-foreground">
                 <Search className="h-5 w-5" />
               </button>
               <Link to="/profile">
-                <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                <div className="h-8 w-8 rounded-full bg-muted border border-border flex items-center justify-center text-xs font-bold text-muted-foreground">
                   {user?.name?.charAt(0)}
                 </div>
               </Link>
@@ -370,17 +369,15 @@ export const AppLayout: React.FC<{
         </header>
 
         {/* Desktop Top Bar (Optional, for search/breadcrumbs if needed, mostly hidden in design for cleaner look, but good for structure) */}
-        <div className="hidden lg:flex h-16 items-center justify-between px-8 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
-          <div className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center">
+        <div className="hidden lg:flex h-16 items-center justify-between px-8 border-b border-border bg-background">
+          <div className="text-sm font-medium text-muted-foreground flex items-center">
             <Link to="/dashboard">
-              <span className="hover:text-slate-900 dark:hover:text-white cursor-pointer transition-colors">
+              <span className="hover:text-foreground cursor-pointer transition-colors">
                 Dashboard
               </span>
             </Link>
-            <span className="mx-2 text-slate-300 dark:text-slate-700">/</span>
-            <span className="text-slate-900 dark:text-white">
-              {currentOrganization?.name}
-            </span>
+            <span className="mx-2 text-muted-foreground">/</span>
+            <span className="text-foreground">{currentOrganization?.name}</span>
           </div>
         </div>
 
@@ -408,7 +405,7 @@ export const AppLayout: React.FC<{
           </>
         }
       >
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           Organizations allow you to group servers, endpoints, and team members
           together.
         </p>

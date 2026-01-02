@@ -48,7 +48,7 @@ function App() {
   }
 
   const error =
-    loginMutation.error?.message ||
+    (loginMutation.data?.message ?? loginMutation.error?.message) ||
     (loginMutation.data?.success === false ? loginMutation.data.message : null);
 
   return (

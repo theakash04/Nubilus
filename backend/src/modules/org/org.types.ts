@@ -5,6 +5,7 @@ export interface Organization {
   created_at: Date;
   updated_at: Date;
   webhook_url: string | null;
+  server_offline_threshold_seconds: number;
 }
 
 export interface OrganizationUser {
@@ -22,4 +23,12 @@ export interface CreateOrgInput {
 export interface UpdateOrgInput {
   name?: string;
   webhook_url?: string | null;
+  server_offline_threshold_seconds?: number;
 }
+
+export interface InviteMemberInput {
+  fullName: string;
+  email: string;
+  permissions: string[];
+}
+

@@ -5,7 +5,7 @@ export const Card: React.FC<{ children: ReactNode; className?: string }> = ({
   className = "",
 }) => (
   <div
-    className={`bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 ${className}`}
+    className={`bg-card text-card-foreground rounded-xl shadow-sm border border-border ${className}`}
   >
     {children}
   </div>

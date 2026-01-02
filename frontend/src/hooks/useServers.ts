@@ -3,6 +3,7 @@ import {
   listServers,
   getServer,
   getServerMetrics,
+  type MetricsQueryParams,
 } from "@/lib/api/servers.api";
 
 export function useServers(orgId: string) {
@@ -23,10 +24,14 @@ export function useServer(orgId: string, serverId: string) {
   });
 }
 
-export function useServerMetrics(orgId: string, serverId: string) {
+export function useServerMetrics(
+  orgId: string,
+  serverId: string,
+  params?: MetricsQueryParams
+) {
   return useQuery({
-    queryKey: ["org", orgId, "servers", serverId, "metrics"],
-    queryFn: () => getServerMetrics(orgId, serverId),
+    queryKey: ["org", orgId, "servers", serverId, "metrics", params],
+    queryFn: () => getServerMetrics(orgId, serverId, params),
     enabled: !!orgId && !!serverId,
     staleTime: 1000 * 30, // 30 seconds for metrics
     refetchInterval: 1000 * 30, // Auto-refresh every 30s

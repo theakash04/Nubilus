@@ -35,3 +35,13 @@ export async function updateOrg(org: updateOrgProps) {
 
   return res.data;
 }
+
+// user invite and addition
+interface props1 {
+  orgId: string;
+}
+export async function getAllInvitedUsers({ orgId }: props1) {
+  const res = await api.get<ApiResponse>(`/org/${orgId}/invites`);
+
+  return res.data;
+}

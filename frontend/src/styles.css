@@ -3,20 +3,98 @@
 /* Custom dark mode variant using data-theme attribute */
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
-/* Register custom theme tokens with Tailwind v4 */
+:root {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --primary: #0d9488; /* Teal 600 */
+  --primary-foreground: #ffffff;
+  --secondary: #f0fdfa; /* Teal 50 */
+  --secondary-foreground: #0f766e;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f0fdfa;
+  --accent-foreground: #0f766e;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #2dd4bf;
+
+  /* --- PRESERVED VARIABLES --- */
+  --radius: 0.625rem;
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  --info: #3b82f6;
+  --info-foreground: #ffffff;
+}
+
+[data-theme="dark"] {
+  --background: #09090b; /* Zinc 950 */
+  --foreground: #fafafa;
+  --card: #18181b; /* Zinc 900 */
+  --card-foreground: #fafafa;
+  --popover: #18181b;
+  --popover-foreground: #fafafa;
+  --primary: #2dd4bf; /* Teal 400 */
+  --primary-foreground: #042f2e;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #134e4a;
+}
+
 @theme {
-  /* Primary color palette (Violet) */
-  --color-primary-50: oklch(0.97 0.02 285);
-  --color-primary-100: oklch(0.94 0.04 285);
-  --color-primary-200: oklch(0.88 0.08 285);
-  --color-primary-300: oklch(0.79 0.13 285);
-  --color-primary-400: oklch(0.68 0.17 285);
-  --color-primary-500: oklch(0.58 0.22 285);
-  --color-primary-600: oklch(0.52 0.24 285);
-  --color-primary-700: oklch(0.46 0.24 285);
-  --color-primary-800: oklch(0.4 0.21 285);
-  --color-primary-900: oklch(0.35 0.18 285);
-  --color-primary-950: oklch(0.25 0.15 285);
+  --color-primary-50: #f0fdfa;
+  --color-primary-100: #ccfbf1;
+  --color-primary-200: #99f6e4;
+  --color-primary-300: #5eead4;
+  --color-primary-400: #2dd4bf;
+  --color-primary-500: #14b8a6;
+  --color-primary-600: #0d9488;
+  --color-primary-700: #0f766e;
+  --color-primary-800: #115e59;
+  --color-primary-900: #134e4a;
+  --color-primary-950: #042f2e;
+
+  /* Semantic Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
 
   /* Font families */
   --font-sans:
@@ -25,6 +103,10 @@
   --font-mono:
     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     monospace;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
 /* Animations */

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useServers, useServerMetrics } from "@/hooks/useServers";
+import { useServerMetrics } from "@/hooks/useServers";
 import { Card } from "@/components/ui/Card";
 import {
   Area,
@@ -8,11 +8,13 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  ReferenceLine,
 } from "recharts";
-import { ChevronDown, Server, Loader2, Clock } from "lucide-react";
+import { ChevronDown, Loader2, Clock, AlertTriangle } from "lucide-react";
 
-interface ResourceUsageChartProps {
+interface ServerMetricsChartProps {
   orgId: string;
+  serverId: string;
 }
 
 const METRIC_CONFIG = {
@@ -22,6 +24,7 @@ const METRIC_CONFIG = {
     color: "#8b5cf6",
     unit: "%",
     maxValue: 100,
+    spikeThreshold: 80,
   },
   memory: {
     key: "memory",
@@ -29,6 +32,7 @@ const METRIC_CONFIG = {
     color: "#3b82f6",
     unit: "%",
     maxValue: 100,
+    spikeThreshold: 85,
   },
   disk: {
     key: "disk",
@@ -36,6 +40,7 @@ const METRIC_CONFIG = {
     color: "#10b981",
     unit: "%",
     maxValue: 100,
+    spikeThreshold: 90,
   },
   load1m: {
     key: "load1m",
@@ -43,6 +48,7 @@ const METRIC_CONFIG = {
     color: "#f59e0b",
     unit: "",
     maxValue: null,
+    spikeThreshold: null,
   },
   load5m: {
     key: "load5m",
@@ -50,6 +56,7 @@ const METRIC_CONFIG = {
     color: "#ef4444",
     unit: "",
     maxValue: null,
+    spikeThreshold: null,
   },
   networkIn: {
     key: "networkIn",
@@ -57,6 +64,7 @@ const METRIC_CONFIG = {
     color: "#06b6d4",
     unit: " MB",
     maxValue: null,
+    spikeThreshold: null,
   },
   networkOut: {
     key: "networkOut",
@@ -64,6 +72,7 @@ const METRIC_CONFIG = {
     color: "#ec4899",
     unit: " MB",
     maxValue: null,
+    spikeThreshold: null,
   },
   diskRead: {
     key: "diskRead",
@@ -71,6 +80,7 @@ const METRIC_CONFIG = {
     color: "#14b8a6",
     unit: " MB",
     maxValue: null,
+    spikeThreshold: null,
   },
   diskWrite: {
     key: "diskWrite",
@@ -78,12 +88,12 @@ const METRIC_CONFIG = {
     color: "#f97316",
     unit: " MB",
     maxValue: null,
+    spikeThreshold: null,
   },
 } as const;
 
 type MetricKey = keyof typeof METRIC_CONFIG;
 
-// Time range options
 const TIME_RANGES = {
   "6h": { label: "6 Hours", hours: 6, limit: 720 },
   "24h": { label: "24 Hours", hours: 24, limit: 2880 },
@@ -93,27 +103,26 @@ const TIME_RANGES = {
 
 type TimeRangeKey = keyof typeof TIME_RANGES;
 
-export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
-  const { data: serversData, isLoading: serversLoading } = useServers(orgId);
-  const servers = serversData?.data?.servers || [];
+interface Spike {
+  time: string;
+  metric: MetricKey;
+  value: number;
+  threshold: number;
+}
 
-  // State
-  const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+export function ServerMetricsChart({
+  orgId,
+  serverId,
+}: ServerMetricsChartProps) {
   const [metricsDropdownOpen, setMetricsDropdownOpen] = useState(false);
   const [timeRangeDropdownOpen, setTimeRangeDropdownOpen] = useState(false);
   const [selectedTimeRange, setSelectedTimeRange] =
     useState<TimeRangeKey>("6h");
 
-  // Default enabled metrics
   const [enabledMetrics, setEnabledMetrics] = useState<Set<MetricKey>>(
     new Set(["cpu", "memory", "disk"])
   );
 
-  // Auto-select first server when data loads
-  const activeServerId = selectedServerId || servers[0]?.id || null;
-
-  // Calculate time range params
   const timeRangeParams = useMemo(() => {
     const range = TIME_RANGES[selectedTimeRange];
     const now = new Date();
@@ -125,20 +134,16 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
     };
   }, [selectedTimeRange]);
 
-  const { data: metricsData, isLoading: metricsLoading } = useServerMetrics(
+  const { data: metricsData, isLoading } = useServerMetrics(
     orgId,
-    activeServerId || "",
+    serverId,
     timeRangeParams
   );
 
-  const selectedServer = servers.find((s) => s.id === activeServerId);
-
-  // Toggle metric visibility
   const toggleMetric = (metric: MetricKey) => {
     setEnabledMetrics((prev) => {
       const next = new Set(prev);
       if (next.has(metric)) {
-        // Don't allow disabling all metrics
         if (next.size > 1) {
           next.delete(metric);
         }
@@ -149,30 +154,25 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
     });
   };
 
-  // Transform metrics data for the chart
-  const chartData = useMemo(() => {
+  // Transform metrics data and detect spikes
+  const { chartData, spikes } = useMemo(() => {
     const metrics = metricsData?.data?.metrics || [];
     const range = TIME_RANGES[selectedTimeRange];
+    const detectedSpikes: Spike[] = [];
 
-    // Format time based on selected range
     const formatTime = (date: Date) => {
-      // For 6h and 24h range, show hour with AM/PM
       if (range.hours <= 24) {
         return date.toLocaleTimeString("en-US", {
           hour: "numeric",
           hour12: true,
         });
-      }
-      // For 7 days, show weekday + date
-      else if (range.hours <= 24 * 7) {
+      } else if (range.hours <= 24 * 7) {
         return date.toLocaleDateString("en-US", {
           weekday: "short",
           month: "short",
           day: "numeric",
         });
-      }
-      // For 30 days, show date
-      else {
+      } else {
         return date.toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
@@ -182,14 +182,11 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
 
     const now = new Date();
 
-    // Helper to get local-time-aligned bucket start
     const getLocalBucketStart = (date: Date, intervalHours: number) => {
       const d = new Date(date);
       if (intervalHours >= 24) {
-        // Align to start of day in local time
         d.setHours(0, 0, 0, 0);
       } else {
-        // Align to hour boundary
         const hours = d.getHours();
         const alignedHour = Math.floor(hours / intervalHours) * intervalHours;
         d.setHours(alignedHour, 0, 0, 0);
@@ -201,26 +198,26 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
     let bucketCount: number;
 
     if (range.hours <= 6) {
-      intervalHours = 1; // 1 hour buckets for 6h view
+      intervalHours = 1;
       bucketCount = 7;
     } else if (range.hours <= 24) {
-      intervalHours = 3; // 3 hour buckets for 24h view
+      intervalHours = 3;
       bucketCount = 9;
     } else if (range.hours <= 24 * 7) {
-      intervalHours = 24; // 1 day buckets for 7d view
+      intervalHours = 24;
       bucketCount = 8;
     } else {
-      intervalHours = 72; // 3 day buckets for 30d view
+      intervalHours = 72;
       bucketCount = 11;
     }
 
     const intervalMs = intervalHours * 60 * 60 * 1000;
 
-    // Create empty buckets aligned to local time
     const buckets: Map<
       number,
       {
         time: string;
+        fullTime: string;
         timestamp: number;
         cpu: number;
         memory: number;
@@ -232,13 +229,14 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
         diskRead: number;
         diskWrite: number;
         count: number;
+        cpuMax: number;
+        memoryMax: number;
+        diskMax: number;
       }
     > = new Map();
 
-    // Get current bucket start in local time
     const currentBucketStart = getLocalBucketStart(now, intervalHours);
 
-    // Generate buckets backwards from current
     for (let i = 0; i < bucketCount; i++) {
       const bucketTime = new Date(
         currentBucketStart.getTime() - i * intervalMs
@@ -247,6 +245,7 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
 
       buckets.set(bucketKey, {
         time: formatTime(bucketTime),
+        fullTime: bucketTime.toLocaleString(),
         timestamp: bucketTime.getTime(),
         cpu: 0,
         memory: 0,
@@ -258,16 +257,16 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
         diskRead: 0,
         diskWrite: 0,
         count: 0,
+        cpuMax: 0,
+        memoryMax: 0,
+        diskMax: 0,
       });
     }
 
-    // Sort metrics by time (oldest first) to calculate deltas correctly
     const sortedMetrics = [...metrics].sort(
       (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
     );
 
-    // Calculate deltas for cumulative values
-    // For each metric point, we compute the difference from the previous point
     interface MetricWithDeltas {
       time: string;
       cpu_usage: number;
@@ -287,9 +286,6 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
       const current = sortedMetrics[i];
       const prev = i > 0 ? sortedMetrics[i - 1] : null;
 
-      // Calculate deltas for cumulative values
-      // Only calculate delta if we have a previous reading and the delta is positive
-      // (negative delta means counter reset or different server)
       let networkInDelta = 0;
       let networkOutDelta = 0;
       let diskReadDelta = 0;
@@ -305,19 +301,12 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
         const diskWriteCurr = Number(current.disk_write_bytes) || 0;
         const diskWritePrev = Number(prev.disk_write_bytes) || 0;
 
-        // Only use positive deltas (counter resets produce negatives)
-        if (netInCurr >= netInPrev) {
-          networkInDelta = netInCurr - netInPrev;
-        }
-        if (netOutCurr >= netOutPrev) {
-          networkOutDelta = netOutCurr - netOutPrev;
-        }
-        if (diskReadCurr >= diskReadPrev) {
+        if (netInCurr >= netInPrev) networkInDelta = netInCurr - netInPrev;
+        if (netOutCurr >= netOutPrev) networkOutDelta = netOutCurr - netOutPrev;
+        if (diskReadCurr >= diskReadPrev)
           diskReadDelta = diskReadCurr - diskReadPrev;
-        }
-        if (diskWriteCurr >= diskWritePrev) {
+        if (diskWriteCurr >= diskWritePrev)
           diskWriteDelta = diskWriteCurr - diskWritePrev;
-        }
       }
 
       metricsWithDeltas.push({
@@ -334,10 +323,8 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
       });
     }
 
-    // Fill buckets with processed data
     metricsWithDeltas.forEach((m) => {
       const metricDate = new Date(m.time);
-      // Use same local-time-aligned bucket calculation
       const metricBucketStart = getLocalBucketStart(metricDate, intervalHours);
       const bucketKey = metricBucketStart.getTime();
 
@@ -348,41 +335,79 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
         bucket.disk += m.disk_usage;
         bucket.load1m += m.load_average_1m;
         bucket.load5m += m.load_average_5m;
-        // Sum the deltas (total transfer during bucket period)
-        bucket.networkIn += m.networkInDelta / (1024 * 1024); // Convert to MB
+        bucket.networkIn += m.networkInDelta / (1024 * 1024);
         bucket.networkOut += m.networkOutDelta / (1024 * 1024);
         bucket.diskRead += m.diskReadDelta / (1024 * 1024);
         bucket.diskWrite += m.diskWriteDelta / (1024 * 1024);
         bucket.count += 1;
+
+        // Track max values for spike detection
+        bucket.cpuMax = Math.max(bucket.cpuMax, m.cpu_usage);
+        bucket.memoryMax = Math.max(bucket.memoryMax, m.memory_usage);
+        bucket.diskMax = Math.max(bucket.diskMax, m.disk_usage);
       }
     });
 
-    // Average percentage/load values, sum transfer values
-    return Array.from(buckets.values())
+    const data = Array.from(buckets.values())
       .sort((a, b) => a.timestamp - b.timestamp)
-      .map((bucket) => ({
-        time: bucket.time,
-        // Average these values
-        cpu: bucket.count > 0 ? Math.round(bucket.cpu / bucket.count) : 0,
-        memory: bucket.count > 0 ? Math.round(bucket.memory / bucket.count) : 0,
-        disk: bucket.count > 0 ? Math.round(bucket.disk / bucket.count) : 0,
-        load1m:
-          bucket.count > 0
-            ? Number((bucket.load1m / bucket.count).toFixed(2))
-            : 0,
-        load5m:
-          bucket.count > 0
-            ? Number((bucket.load5m / bucket.count).toFixed(2))
-            : 0,
-        // Sum these values (total transfer during period)
-        networkIn: Number(bucket.networkIn.toFixed(1)),
-        networkOut: Number(bucket.networkOut.toFixed(1)),
-        diskRead: Number(bucket.diskRead.toFixed(1)),
-        diskWrite: Number(bucket.diskWrite.toFixed(1)),
-      }));
+      .map((bucket) => {
+        const cpuVal =
+          bucket.count > 0 ? Math.round(bucket.cpu / bucket.count) : 0;
+        const memVal =
+          bucket.count > 0 ? Math.round(bucket.memory / bucket.count) : 0;
+        const diskVal =
+          bucket.count > 0 ? Math.round(bucket.disk / bucket.count) : 0;
+
+        // Detect spikes based on max values in each bucket
+        if (bucket.cpuMax >= METRIC_CONFIG.cpu.spikeThreshold!) {
+          detectedSpikes.push({
+            time: bucket.fullTime,
+            metric: "cpu",
+            value: Math.round(bucket.cpuMax),
+            threshold: METRIC_CONFIG.cpu.spikeThreshold!,
+          });
+        }
+        if (bucket.memoryMax >= METRIC_CONFIG.memory.spikeThreshold!) {
+          detectedSpikes.push({
+            time: bucket.fullTime,
+            metric: "memory",
+            value: Math.round(bucket.memoryMax),
+            threshold: METRIC_CONFIG.memory.spikeThreshold!,
+          });
+        }
+        if (bucket.diskMax >= METRIC_CONFIG.disk.spikeThreshold!) {
+          detectedSpikes.push({
+            time: bucket.fullTime,
+            metric: "disk",
+            value: Math.round(bucket.diskMax),
+            threshold: METRIC_CONFIG.disk.spikeThreshold!,
+          });
+        }
+
+        return {
+          time: bucket.time,
+          fullTime: bucket.fullTime,
+          cpu: cpuVal,
+          memory: memVal,
+          disk: diskVal,
+          load1m:
+            bucket.count > 0
+              ? Number((bucket.load1m / bucket.count).toFixed(2))
+              : 0,
+          load5m:
+            bucket.count > 0
+              ? Number((bucket.load5m / bucket.count).toFixed(2))
+              : 0,
+          networkIn: Number(bucket.networkIn.toFixed(1)),
+          networkOut: Number(bucket.networkOut.toFixed(1)),
+          diskRead: Number(bucket.diskRead.toFixed(1)),
+          diskWrite: Number(bucket.diskWrite.toFixed(1)),
+        };
+      });
+
+    return { chartData: data, spikes: detectedSpikes };
   }, [metricsData, selectedTimeRange]);
 
-  // Determine Y-axis domain based on enabled metrics
   const yAxisDomain = useMemo(() => {
     const percentMetrics: MetricKey[] = ["cpu", "memory", "disk"];
     const hasPercentMetrics = [...enabledMetrics].some((m) =>
@@ -397,26 +422,24 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
       return [0, 100] as [number, number];
     }
 
-    // For mixed metrics, use auto domain
     return ["auto", "auto"] as ["auto", "auto"];
   }, [enabledMetrics]);
-
-  const isLoading = serversLoading || metricsLoading;
 
   return (
     <Card className="p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-        <h3 className="text-lg font-bold text-foreground">Resource Usage</h3>
+        <h3 className="text-lg font-bold text-foreground">
+          Historical Metrics
+        </h3>
         <div className="flex items-center flex-wrap gap-2">
           {/* Time Range Selector */}
           <div className="relative">
             <button
               onClick={() => {
                 setTimeRangeDropdownOpen(!timeRangeDropdownOpen);
-                setDropdownOpen(false);
                 setMetricsDropdownOpen(false);
               }}
-              className="flex items-center space-x-2 px-3 py-1.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+              className="flex items-center space-x-2 px-3 py-1.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-accent transition-colors cursor-pointer"
             >
               <Clock className="h-4 w-4" />
               <span>{TIME_RANGES[selectedTimeRange].label}</span>
@@ -445,62 +468,14 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
             )}
           </div>
 
-          {/* Server Selector Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => {
-                setDropdownOpen(!dropdownOpen);
-                setMetricsDropdownOpen(false);
-                setTimeRangeDropdownOpen(false);
-              }}
-              className="flex items-center space-x-2 px-3 py-1.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-              disabled={servers.length === 0}
-            >
-              <Server className="h-4 w-4" />
-              <span className="max-w-[120px] truncate">
-                {selectedServer?.name || "Select Server"}
-              </span>
-              <ChevronDown className="h-4 w-4" />
-            </button>
-
-            {dropdownOpen && servers.length > 0 && (
-              <div className="absolute right-0 mt-2 w-56 bg-popover rounded-lg shadow-lg border border-border z-50 max-h-60 overflow-y-auto">
-                {servers.map((server) => (
-                  <button
-                    key={server.id}
-                    onClick={() => {
-                      setSelectedServerId(server.id);
-                      setDropdownOpen(false);
-                    }}
-                    className={`w-full px-4 py-2 text-left text-sm hover:bg-accent flex items-center justify-between cursor-pointer ${
-                      server.id === activeServerId
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    <span className="truncate">{server.name}</span>
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        server.status === "active"
-                          ? "bg-emerald-500"
-                          : "bg-muted-foreground"
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Metrics Selector Dropdown */}
           <div className="relative">
             <button
               onClick={() => {
                 setMetricsDropdownOpen(!metricsDropdownOpen);
-                setDropdownOpen(false);
                 setTimeRangeDropdownOpen(false);
               }}
-              className="flex items-center space-x-2 px-3 py-1.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+              className="flex items-center space-x-2 px-3 py-1.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-accent transition-colors cursor-pointer"
             >
               <span>Metrics ({enabledMetrics.size})</span>
               <ChevronDown className="h-4 w-4" />
@@ -527,7 +502,7 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
                       type="checkbox"
                       checked={enabledMetrics.has(key as MetricKey)}
                       onChange={() => {}}
-                      className="h-4 w-4 rounded border-input text-primary focus:ring-ring cursor-pointer"
+                      className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                     />
                   </button>
                 ))}
@@ -556,15 +531,38 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
           ))}
       </div>
 
+      {/* Spikes Alert */}
+      {spikes.length > 0 && (
+        <div className="mb-4 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-warning">
+                {spikes.length} spike{spikes.length > 1 ? "s" : ""} detected
+              </p>
+              <ul className="mt-1 text-xs text-warning/90 space-y-0.5">
+                {spikes.slice(0, 5).map((spike, i) => (
+                  <li key={i}>
+                    {METRIC_CONFIG[spike.metric].label} reached {spike.value}
+                    {METRIC_CONFIG[spike.metric].unit} at {spike.time}
+                  </li>
+                ))}
+                {spikes.length > 5 && <li>...and {spikes.length - 5} more</li>}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chart */}
       <div className="h-64 md:h-80 w-full">
         {isLoading ? (
           <div className="h-full flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
           </div>
-        ) : servers.length === 0 ? (
+        ) : chartData.length === 0 ? (
           <div className="h-full flex items-center justify-center text-muted-foreground">
-            No servers found. Add a server to see resource usage.
+            No metrics data available for this time range.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
@@ -573,7 +571,7 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
                 {Object.entries(METRIC_CONFIG).map(([key, config]) => (
                   <linearGradient
                     key={key}
-                    id={`color${key}`}
+                    id={`serverColor${key}`}
                     x1="0"
                     y1="0"
                     x2="0"
@@ -619,6 +617,23 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
                     : `${value}`;
                 }}
               />
+              {/* Threshold lines for spike detection */}
+              {enabledMetrics.has("cpu") && (
+                <ReferenceLine
+                  y={METRIC_CONFIG.cpu.spikeThreshold}
+                  stroke="#8b5cf6"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.5}
+                />
+              )}
+              {enabledMetrics.has("memory") && (
+                <ReferenceLine
+                  y={METRIC_CONFIG.memory.spikeThreshold}
+                  stroke="#3b82f6"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.5}
+                />
+              )}
               <Tooltip
                 contentStyle={{
                   borderRadius: "8px",
@@ -627,6 +642,12 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
                   backgroundColor: "rgba(15, 23, 42, 0.95)",
                   color: "#f8fafc",
                   padding: "8px 12px",
+                }}
+                labelFormatter={(label, payload) => {
+                  if (payload && payload[0]) {
+                    return payload[0].payload.fullTime;
+                  }
+                  return label;
                 }}
                 formatter={(value, name) => {
                   const config = Object.values(METRIC_CONFIG).find(
@@ -649,7 +670,7 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
                     stroke={config.color}
                     strokeWidth={2}
                     fillOpacity={1}
-                    fill={`url(#color${key})`}
+                    fill={`url(#serverColor${key})`}
                   />
                 ))}
             </AreaChart>

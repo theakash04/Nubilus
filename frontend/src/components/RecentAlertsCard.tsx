@@ -25,11 +25,11 @@ export function RecentAlertsCard({ orgId, limit = 5 }: RecentAlertsCardProps) {
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case "critical":
-        return "text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-900/20";
+        return "text-destructive bg-destructive/10";
       case "warning":
-        return "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20";
+        return "text-warning bg-warning/10";
       default:
-        return "text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/20";
+        return "text-info bg-info/10";
     }
   };
 
@@ -62,22 +62,22 @@ export function RecentAlertsCard({ orgId, limit = 5 }: RecentAlertsCardProps) {
     <Card className="p-6 h-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
-          <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <div className="p-2 rounded-lg bg-amber-500/10">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
           </div>
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wide">
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">
             Recent Alerts
           </h3>
         </div>
-        <span className="text-xs text-slate-400">Recent</span>
+        <span className="text-xs text-muted-foreground">Recent</span>
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : alerts.length === 0 ? (
-        <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-sm">
+        <div className="text-center py-8 text-muted-foreground text-sm">
           <CheckCircle className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
           No active alerts
         </div>
@@ -86,17 +86,17 @@ export function RecentAlertsCard({ orgId, limit = 5 }: RecentAlertsCardProps) {
           {alerts.map((alert) => (
             <div
               key={alert.id}
-              className="flex items-start justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="flex items-start justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
             >
               <div className="flex items-start space-x-3 min-w-0 flex-1">
                 <span
                   className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${getSeverityColor(alert.severity)}`}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {alert.title}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                  <p className="text-xs text-muted-foreground line-clamp-1">
                     {alert.message}
                   </p>
                 </div>
@@ -107,7 +107,7 @@ export function RecentAlertsCard({ orgId, limit = 5 }: RecentAlertsCardProps) {
                 >
                   {alert.severity}
                 </span>
-                <span className="text-xs text-slate-400 flex items-center space-x-1">
+                <span className="text-xs text-muted-foreground flex items-center space-x-1">
                   {getStatusIcon(alert.status)}
                   <span>{formatTime(alert.triggeredAt)}</span>
                 </span>

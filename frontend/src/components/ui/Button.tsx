@@ -14,17 +14,15 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyle =
-    "inline-flex items-center justify-center rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-50 dark:focus:ring-offset-slate-950 disabled:opacity-60 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background cursor-pointer text-foreground";
 
   const variants = {
-    primary:
-      "bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-600 dark:hover:bg-primary-500 focus:ring-primary-500 shadow-sm border border-transparent shadow-primary-500/20",
+    primary: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
     secondary:
-      "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 focus:ring-primary-500",
+      "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
     danger:
-      "bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-sm",
-    ghost:
-      "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 focus:ring-slate-500",
+      "bg-destructive text-destructive-foreground shadow hover:bg-destructive/90",
+    ghost: "hover:bg-accent hover:text-accent-foreground",
   };
 
   const sizes = {

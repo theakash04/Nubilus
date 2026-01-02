@@ -1,30 +1,39 @@
 // Server types
 export interface Server {
   id: string;
-  orgId: string;
+  org_id: string;
   name: string;
   hostname: string;
-  ipAddress: string | null;
-  status: "online" | "offline" | "unknown";
+  ip_address: string | null;
+  api_key_id: string | null;
+  status: "pending" | "active" | "inactive" | "error";
   tags: string[];
-  lastSeenAt: string | null;
-  createdAt: string;
-  updatedAt: string;
+  last_seen_at: string | null;
+  created_at: string;
+  os_type: string;
+  os_version: string;
+  agent_version: string;
 }
 
 export interface ServerMetric {
-  id: string;
-  serverId: string;
-  cpuUsage: number;
-  memoryUsage: number;
-  memoryTotal: number;
-  diskUsage: number;
-  diskTotal: number;
-  networkIn: number;
-  networkOut: number;
-  diskReadBytes: number;
-  diskWriteBytes: number;
-  timestamp: string;
+  time: string;
+  server_id: string;
+  cpu_usage: number;
+  cpu_count: number;
+  load_average_1m: number;
+  load_average_5m: number;
+  load_average_15m: number;
+  memory_usage: number;
+  memory_total: string; // BigInt comes as string from DB
+  memory_used: string;
+  memory_available: string;
+  disk_usage: number;
+  disk_total: string;
+  disk_used: string;
+  disk_read_bytes: string;
+  disk_write_bytes: string;
+  network_in: string;
+  network_out: string;
 }
 
 // Endpoint types
@@ -110,10 +119,11 @@ export interface AlertRule {
 // API Key types
 export interface ApiKey {
   id: string;
-  orgId: string;
+  org_id: string;
   name: string;
-  keyPrefix: string;
-  createdAt: string;
-  lastUsedAt: string | null;
-  expiresAt: string | null;
+  key_prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+  expires_at: string | null;
+  is_active: boolean;
 }

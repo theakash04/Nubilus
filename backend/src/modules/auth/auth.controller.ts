@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from "uuid";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sha256Hex } from "../../utils/crypto";
+import { createSession } from "../../utils/createSession";
 
 // otp store
 const otpStore = new Map<string, { otp: string; email: string; expiresAt: number }>();
@@ -37,50 +38,10 @@ export async function login(req: Request, res: Response) {
     throw new AppError("Invalid email or password", 401);
   }
 
-  // check tokens which are active
-  const activeSessions = await findAllRefreshTokenByUserId(user.id);
-  if (activeSessions.length >= 5) {
-    throw new AppError(
-      "Maximum active sessions reached. Please logout from other devices to continue.",
-      403
-    );
-  }
-
-  const accessToken = jwt.sign({ userId: user.id, type: "access" }, process.env.JWT_SECRET!, {
-    expiresIn: "15m",
-  });
-
-  const jti = uuidv4();
-  const refreshToken = jwt.sign(
-    { userId: user.id, type: "refresh", jti },
-    process.env.REFRESH_TOKEN_SECRET!,
-    { expiresIn: "30d" }
-  );
-
-  const tokenHash = sha256Hex(refreshToken);
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-
-  await saveRefreshToken({
-    id: jti,
+  await createSession({
     userId: user.id,
-    tokenHash,
-    expiresAt,
-    userAgent: req.get("user-agent"),
-    ipAddress: req.ip,
-  });
-
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: true,
-    maxAge: 15 * 60 * 1000,
-  });
-
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: true,
-    maxAge: 30 * 24 * 60 * 60 * 1000,
+    req,
+    res,
   });
 
   sendResponse(res, 200, "logged in successfully!");
