@@ -26,6 +26,21 @@ pub fn collect(_system: &System) -> DiskMetrics {
 
     // Aggregate all mounted disks
     for disk in disks.list() {
+        let fs_type = disk.file_system().to_str().unwrap_or("").to_lowercase();
+        
+        // Filter out virtual filesystems and read-only snap loops
+        let is_virtual = fs_type == "overlay" 
+            || fs_type == "squashfs" 
+            || fs_type == "tmpfs" 
+            || fs_type == "devtmpfs"
+            || fs_type == "autofs"
+            || fs_type == "proc"
+            || fs_type == "sysfs";
+
+        if is_virtual {
+            continue;
+        }
+
         total += disk.total_space();
         available += disk.available_space();
     }

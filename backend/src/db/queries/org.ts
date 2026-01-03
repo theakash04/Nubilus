@@ -137,11 +137,13 @@ export async function createOrgInvite({
   return { token };
 }
 
-export async function acceptOrgInvite({
-  token,
-}: {
-  token: string;
-}): Promise<{ userId: string; mustSetPassword: boolean }> {
+export async function acceptOrgInvite({ token }: { token: string }): Promise<{
+  userId: string;
+  mustSetPassword: boolean;
+  orgId: string;
+  email: string;
+  fullName: string;
+}> {
   const [invite] = await sql`
     SELECT * FROM org_invites WHERE token= ${token}
     AND accepted = false
@@ -201,7 +203,13 @@ export async function acceptOrgInvite({
     WHERE id = ${invite.id}::uuid
   `;
 
-  return { userId: user.id, mustSetPassword: isNewUser };
+  return {
+    userId: user.id,
+    mustSetPassword: isNewUser,
+    orgId: invite.org_id,
+    email: invite.email,
+    fullName: invite.full_name,
+  };
 }
 
 export async function ListOrgInvites({ orgId, accepted }: { orgId: string; accepted?: boolean }) {

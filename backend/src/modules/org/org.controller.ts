@@ -16,6 +16,7 @@ import {
   userHasOrgPermission,
   getOrgSettings,
   updateOrgSettings,
+  getOrgAdminEmails,
 } from "../../db/queries/org";
 import { CreateOrgInput, InviteMemberInput, UpdateOrgInput } from "./org.types";
 import { serverTrends } from "../../db/queries/servers";
@@ -167,10 +168,48 @@ export async function acceptInvite(req: Request, res: Response) {
   if (!token || typeof token !== "string") {
     throw new AppError("Invite token is required", 400);
   }
-  console.log("came here");
 
-  const { userId, mustSetPassword } = await acceptOrgInvite({ token });
-  console.log("came here 2");
+  const { userId, mustSetPassword, orgId, email, fullName } = await acceptOrgInvite({
+    token,
+  });
+
+  // Handle new member notifications
+  try {
+    const settings = await getOrgSettings(orgId);
+
+    if (settings && settings.notify_on_new_member) {
+      let recipients = settings.notification_emails;
+
+      // If no specific notification emails set, fetch all admins
+      if (!recipients || recipients.length === 0) {
+        recipients = await getOrgAdminEmails(orgId);
+      }
+
+      if (recipients.length > 0) {
+        // Send email to each recipient
+        await Promise.all(
+          recipients.map(recipient =>
+            addEmailJob({
+              to: recipient,
+              subject: `New Member Joined: ${fullName}`,
+              html: `
+              <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                <h2>New Member Joined</h2>
+                <p><strong>${fullName}</strong> (${email}) has just joined your organization.</p>
+                <p>Role/Permissions have been assigned as per the invitation.</p>
+                <br/>
+                <a href="${process.env.FRONTEND_URL}/dashboard/${orgId}/members" style="color: #0d9488;">View Members</a>
+              </div>
+            `,
+            })
+          )
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Failed to send new member notifications:", error);
+    // Don't fail the request if notification fails
+  }
 
   const session = await createSession({
     req,
@@ -178,7 +217,7 @@ export async function acceptInvite(req: Request, res: Response) {
     userId,
   });
 
-  sendResponse(res, 200, "Invitation sent successfully", { mustSetPassword });
+  sendResponse(res, 200, "Invitation accepted successfully", { mustSetPassword });
 }
 
 export async function getAllInvites(req: Request, res: Response) {
