@@ -93,7 +93,7 @@ impl Config {
 
     /// Generate a default configuration template
     pub fn template() -> String {
-        let api_url = option_env!("API_URL").unwrap_or("http://localhost:3000/api");
+        let api_url = default_api_url();
         
         format!(r#"# Nubilus Agent Configuration
 # Location: /etc/nubilus/agent.toml
@@ -121,8 +121,14 @@ http_health_checks = false
     }
 }
 
-/// Default API URL, configurable at compile time via API_URL env var
-pub const DEFAULT_API_URL: &str = "http://localhost:3000/api";
+/// Default API URL - reads from API_URL env var at runtime, falls back to production URL
+pub const DEFAULT_API_URL: &str = "https://nubilus.akashtwt.me/api";
+
+/// Get default API URL from runtime environment or fallback to default
+pub fn default_api_url() -> String {
+    std::env::var("API_URL")
+        .unwrap_or_else(|_| DEFAULT_API_URL.to_string())
+}
 
 /// Get the default config file path based on OS
 pub fn default_config_path() -> &'static str {
