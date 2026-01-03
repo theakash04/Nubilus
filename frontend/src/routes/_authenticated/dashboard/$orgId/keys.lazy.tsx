@@ -9,6 +9,7 @@ import {
   useCreateApiKey,
   useDeleteApiKey,
 } from "@/hooks/useApiKeys";
+import { usePermissions } from "@/hooks/usePermissions";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { Copy, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -24,12 +25,17 @@ function RouteComponent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [keyName, setKeyName] = useState("");
   const [newKey, setNewKey] = useState<string | null>(null);
+  const [keyToDelete, setKeyToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   // Use the API key hooks
   const { data: apiKeysData, isLoading, error } = useApiKeys(orgId);
   const createApiKeyMutation = useCreateApiKey(orgId);
   const deleteApiKeyMutation = useDeleteApiKey(orgId);
   const toast = useToast();
+  const { canManage, canWrite } = usePermissions();
 
   const apiKeys = apiKeysData?.data?.keys ?? [];
 
@@ -56,10 +62,19 @@ function RouteComponent() {
   };
 
   const handleDelete = (keyId: string, keyName: string) => {
-    if (!confirm(`Revoke API key "${keyName}"? This cannot be undone.`)) return;
-    deleteApiKeyMutation.mutate(keyId, {
+    setKeyToDelete({ id: keyId, name: keyName });
+  };
+
+  const confirmRevoke = () => {
+    if (!keyToDelete) return;
+
+    deleteApiKeyMutation.mutate(keyToDelete.id, {
       onSuccess: () => {
-        toast.success("API key revoked", `"${keyName}" has been revoked.`);
+        toast.success(
+          "API key revoked",
+          `"${keyToDelete.name}" has been revoked.`
+        );
+        setKeyToDelete(null);
       },
       onError: (error: any) => {
         toast.error(
@@ -76,12 +91,16 @@ function RouteComponent() {
   };
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-foreground">API Keys</h1>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" /> Create Key
-        </Button>
-      </div>
+      {
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-foreground">API Keys</h1>
+          {canWrite && (
+            <Button onClick={() => setIsModalOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" /> Create Key
+            </Button>
+          )}
+        </div>
+      }
 
       <Card className="overflow-hidden">
         {isLoading ? (
@@ -143,16 +162,18 @@ function RouteComponent() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="w-full flex items-center-safe justify-end">
-                      <button
-                        onClick={() => handleDelete(key.id, key.name)}
-                        disabled={
-                          deleteApiKeyMutation.isPending || !key.is_active
-                        }
-                        className="text-destructive hover:text-destructive/80 transition-colors disabled:opacity-50 cursor-pointer flex  items-center justify-end gap-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span>Revoke</span>
-                      </button>
+                      {canManage && (
+                        <button
+                          onClick={() => handleDelete(key.id, key.name)}
+                          disabled={
+                            deleteApiKeyMutation.isPending || !key.is_active
+                          }
+                          className="text-destructive hover:text-destructive/80 transition-colors disabled:opacity-50 cursor-pointer flex  items-center justify-end gap-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span>Revoke</span>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -212,6 +233,40 @@ function RouteComponent() {
             </Button>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={!!keyToDelete}
+        onClose={() => setKeyToDelete(null)}
+        title="Revoke API Key"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setKeyToDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={confirmRevoke}
+              isLoading={deleteApiKeyMutation.isPending}
+            >
+              {deleteApiKeyMutation.isPending ? "Revoking..." : "Revoke Key"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-muted-foreground">
+            Are you sure you want to revoke the API key{" "}
+            <span className="font-semibold text-foreground">
+              "{keyToDelete?.name}"
+            </span>
+            ?
+          </p>
+          <div className="bg-destructive/10 p-3 rounded-md border border-destructive/20 text-sm text-destructive">
+            This action cannot be undone. Any applications using this key will
+            stop working immediately.
+          </div>
+        </div>
       </Modal>
     </div>
   );

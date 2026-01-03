@@ -111,3 +111,13 @@ export async function revokeRefreshToken(id: string) {
     WHERE id = ${id}::uuid
   `;
 }
+
+export async function setUserPassword(userId: string, passwordHash: string) {
+  const [user] = await sql<User[]>`
+    UPDATE users
+    SET password_hash = ${passwordHash}, updated_at = NOW()
+    WHERE id = ${userId}::uuid AND password_hash IS NULL
+    RETURNING *
+  `;
+  return user ?? null;
+}

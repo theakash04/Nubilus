@@ -93,12 +93,14 @@ impl Config {
 
     /// Generate a default configuration template
     pub fn template() -> String {
-        r#"# Nubilus Agent Configuration
+        let api_url = env!("API_URL");
+        
+        format!(r#"# Nubilus Agent Configuration
 # Location: /etc/nubilus/agent.toml
 
 [server]
 # URL of your Nubilus backend API
-api_url = "http://localhost:8080"
+api_url = "{}"
 # Your organization's API key (from the dashboard)
 api_key = "nub_your_api_key_here"
 
@@ -115,9 +117,13 @@ heartbeat_interval_seconds = 30
 collect_processes = true
 # Enable agent-side HTTP endpoint health checks
 http_health_checks = false
-"#.to_string()
+"#, api_url)
     }
 }
+
+/// Default API URL, configurable at compile time via API_URL env var
+/// This will fail to compile if API_URL is not set
+pub const DEFAULT_API_URL: &str = env!("API_URL");
 
 /// Get the default config file path based on OS
 pub fn default_config_path() -> &'static str {

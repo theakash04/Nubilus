@@ -20,11 +20,11 @@ const router = Router();
 
 router.get("/", authorize, getMyOrganizations);
 router.post("/", authorize, createOrg);
+router.get("/invite/accept", acceptInvite);
 router.get("/:orgId", authorize, getOrganization);
 router.put("/:orgId", authorize, updateOrg);
 router.get("/:orgId/stats/history", authorize, getStats);
 router.post("/:orgId/invite", authorize, inviteMember);
-router.get("/invite/accept", acceptInvite);
 router.get("/:orgId/invites", authorize, getAllInvites);
 router.get("/:orgId/members", authorize, getAllMembers);
 router.patch("/:orgId/members/:userId/suspend", authorize, suspendMemberController);

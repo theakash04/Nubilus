@@ -13,6 +13,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sha256Hex } from "../../utils/crypto";
 import { createSession } from "../../utils/createSession";
+import { addEmailJob } from "../../queues";
 
 // otp store
 const otpStore = new Map<string, { otp: string; email: string; expiresAt: number }>();
@@ -90,9 +91,16 @@ export async function requestSessionManagementOTP(req: Request, res: Response) {
     expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
   });
 
-  // TODO: send otp mail
-  console.log(user.email, otp);
-  // await sendOTPEmail(user.email, otp);
+  await addEmailJob({
+    to: user.email,
+    subject: "Your One-Time Password (OTP)",
+    html: `
+    <p>Hello,</p>
+    <p>Your OTP is <strong>${otp}</strong>.</p>
+    <p>This code will expire in a few minutes.</p>
+    <p>If you did not request this, please ignore this email.</p>
+  `,
+  });
 
   // Clean up expired OTPs
   setTimeout(() => otpStore.delete(otpId), 5 * 60 * 1000);
@@ -241,4 +249,28 @@ export async function getUser(req: Request, res: Response) {
   }
 
   sendResponse(res, 200, "user found successfully!", user);
+}
+
+export async function setPassword(req: Request, res: Response) {
+  const userId = req.user?.userId;
+  const { password } = req.body;
+
+  if (!userId) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  if (!password || password.length < 6) {
+    throw new AppError("Password must be at least 6 characters", 400);
+  }
+
+  const { setUserPassword } = await import("../../db/queries/users");
+  const saltRounds = 10;
+  const passwordHash = await bcrypt.hash(password, saltRounds);
+
+  const updated = await setUserPassword(userId, passwordHash);
+  if (!updated) {
+    throw new AppError("Password already set or user not found", 400);
+  }
+
+  sendResponse(res, 200, "Password set successfully");
 }

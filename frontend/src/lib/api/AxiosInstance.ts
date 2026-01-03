@@ -12,8 +12,16 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<{ message?: string; success?: boolean }>) => {
-    if (error.response?.data?.message) {
-      error.message = error.response.data.message;
+    if (error.response) {
+      const { status, data } = error.response;
+
+      if (status === 403) {
+        error.message =
+          data?.message ||
+          "Access denied. You don't have permission to perform this action.";
+      } else if (data?.message) {
+        error.message = data.message;
+      }
     }
     return Promise.reject(error);
   }

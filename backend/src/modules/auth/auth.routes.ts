@@ -6,6 +6,7 @@ import {
   logout,
   logoutFromSession,
   requestSessionManagementOTP,
+  setPassword,
   verifySessionManagementOTP,
 } from "./auth.controller";
 import { authorize } from "../../middleware/authenticate.middleware";
@@ -21,5 +22,6 @@ router.delete("/session/logout", logoutFromSession);
 // auth needed
 router.get("/user", authorize, getUser);
 router.get("/logout", authorize, logout);
+router.post("/set-password", authorize, setPassword);
 
 export default router;

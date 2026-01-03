@@ -26,9 +26,12 @@ export async function getOrganizationById(id: string): Promise<Organization | nu
   return org ?? null;
 }
 
-export async function getOrganizationsByUserId(userId: string): Promise<Organization[]> {
-  const orgs = await sql<Organization[]>`
-    SELECT o.* FROM organizations o
+export async function getOrganizationsByUserId(
+  userId: string
+): Promise<(Organization & { user_permissions: string[] })[]> {
+  const orgs = await sql<(Organization & { user_permissions: string[] })[]>`
+    SELECT o.*, ou.permissions as user_permissions 
+    FROM organizations o
     JOIN organizations_users ou ON o.id = ou.organization_id
     WHERE ou.user_id = ${userId}::uuid AND ou.status = 'active'
   `;
@@ -170,7 +173,7 @@ export async function acceptOrgInvite({
   const [existingLink] = await sql`
     SELECT *
     FROM organizations_users
-    WHERE organization_id = ${invite.organization_id}::uuid
+    WHERE organization_id = ${invite.org_id}::uuid
       AND user_id = ${user.id}::uuid
   `;
 
@@ -183,7 +186,7 @@ export async function acceptOrgInvite({
         status
       )
       VALUES (
-        ${invite.organization_id}::uuid,
+        ${invite.org_id}::uuid,
         ${user.id}::uuid,
         ${invite.permissions},
         'active'
@@ -304,6 +307,7 @@ export interface OrgSettings {
   notify_on_new_member: boolean;
   notify_on_server_offline: boolean;
   notify_on_alert_triggered: boolean;
+  notification_emails: string[];
   webhook_url: string | null;
   webhook_secret: string | null;
   webhook_enabled: boolean;
@@ -328,6 +332,7 @@ export async function updateOrgSettings({
   notify_on_new_member,
   notify_on_server_offline,
   notify_on_alert_triggered,
+  notification_emails,
   webhook_url,
   webhook_secret,
   webhook_enabled,
@@ -339,6 +344,7 @@ export async function updateOrgSettings({
   notify_on_new_member?: boolean;
   notify_on_server_offline?: boolean;
   notify_on_alert_triggered?: boolean;
+  notification_emails?: string[];
   webhook_url?: string | null;
   webhook_secret?: string | null;
   webhook_enabled?: boolean;
@@ -358,9 +364,22 @@ export async function updateOrgSettings({
       notify_on_alert_triggered = COALESCE(${
         notify_on_alert_triggered ?? null
       }, notify_on_alert_triggered),
+      notification_emails = COALESCE(${notification_emails ?? null}, notification_emails),
       webhook_url = COALESCE(${webhook_url ?? null}, webhook_url),
       webhook_secret = COALESCE(${webhook_secret ?? null}, webhook_secret),
       webhook_enabled = COALESCE(${webhook_enabled ?? null}, webhook_enabled)
     WHERE org_id = ${orgId}::uuid
   `;
+}
+
+export async function getOrgAdminEmails(orgId: string): Promise<string[]> {
+  const admins = await sql<{ email: string }[]>`
+    SELECT u.email
+    FROM organizations_users ou
+    JOIN users u ON u.id = ou.user_id
+    WHERE ou.organization_id = ${orgId}::uuid
+      AND ou.status = 'active'
+      AND 'manage' = ANY(ou.permissions)
+  `;
+  return admins.map(a => a.email);
 }

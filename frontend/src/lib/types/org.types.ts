@@ -6,6 +6,7 @@ export interface Organization {
   updated_at: Date;
   webhook_url: string | null;
   server_offline_threshold_seconds: number;
+  user_permissions?: string[]; // Current user's permissions for this org
 }
 
 export interface OrgInvite {
@@ -42,6 +43,7 @@ export interface OrgSettings {
   notify_on_new_member: boolean;
   notify_on_server_offline: boolean;
   notify_on_alert_triggered: boolean;
+  notification_emails: string[];
   webhook_url: string | null;
   webhook_secret: string | null;
   webhook_enabled: boolean;

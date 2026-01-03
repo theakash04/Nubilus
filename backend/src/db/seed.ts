@@ -1,6 +1,9 @@
 import dotenv from "dotenv";
 import { createNewUser } from "./queries/users";
 import bcrypt from "bcrypt";
+import path from "path";
+
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 dotenv.config();
 const saltRounds = 10;
 

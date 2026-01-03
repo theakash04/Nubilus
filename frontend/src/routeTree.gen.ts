@@ -11,6 +11,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardOrgIdRouteImport } from './routes/_authenticated/dashboard/$orgId'
@@ -45,6 +46,11 @@ const AuthenticatedDashboardOrgIdDatabasesLazyRouteImport = createFileRoute(
 const AuthenticatedDashboardOrgIdServerServerIdLazyRouteImport =
   createFileRoute('/_authenticated/dashboard/$orgId/server/$serverId')()
 
+const AcceptInviteRoute = AcceptInviteRouteImport.update({
+  id: '/accept-invite',
+  path: '/accept-invite',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -159,6 +165,7 @@ const AuthenticatedDashboardOrgIdServerServerIdLazyRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/accept-invite': typeof AcceptInviteRoute
   '/dashboard': typeof AuthenticatedDashboardLazyRoute
   '/profile': typeof AuthenticatedProfileLazyRoute
   '/dashboard/$orgId': typeof AuthenticatedDashboardOrgIdRouteWithChildren
@@ -173,6 +180,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/accept-invite': typeof AcceptInviteRoute
   '/dashboard': typeof AuthenticatedDashboardLazyRoute
   '/profile': typeof AuthenticatedProfileLazyRoute
   '/dashboard/$orgId/databases': typeof AuthenticatedDashboardOrgIdDatabasesLazyRoute
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/accept-invite': typeof AcceptInviteRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardLazyRoute
   '/_authenticated/profile': typeof AuthenticatedProfileLazyRoute
   '/_authenticated/dashboard/$orgId': typeof AuthenticatedDashboardOrgIdRouteWithChildren
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accept-invite'
     | '/dashboard'
     | '/profile'
     | '/dashboard/$orgId'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/accept-invite'
     | '/dashboard'
     | '/profile'
     | '/dashboard/$orgId/databases'
@@ -232,6 +243,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/accept-invite'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
     | '/_authenticated/dashboard/$orgId'
@@ -248,10 +260,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AcceptInviteRoute: typeof AcceptInviteRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/accept-invite': {
+      id: '/accept-invite'
+      path: '/accept-invite'
+      fullPath: '/accept-invite'
+      preLoaderRoute: typeof AcceptInviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -402,6 +422,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AcceptInviteRoute: AcceptInviteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

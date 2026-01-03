@@ -25,4 +25,3 @@ export default function NotFound() {
   );
 }
 
-// TODO: need to work on tailwindcss theme

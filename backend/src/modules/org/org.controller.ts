@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { AppError, sendResponse } from "../../utils/handler";
-import { sendEmail } from "../../utils/email";
 import {
   acceptOrgInvite,
   countActiveManagers,
@@ -24,6 +23,7 @@ import { endpointTrends } from "../../db/queries/endpoints";
 import { databaseTrends } from "../../db/queries/databases";
 import { alertTrends } from "../../db/queries/alerts";
 import { createSession } from "../../utils/createSession";
+import { addEmailJob } from "../../queues";
 
 export async function getMyOrganizations(req: Request, res: Response) {
   const userId = req.user?.userId;
@@ -132,7 +132,7 @@ export async function inviteMember(req: Request, res: Response) {
 
   const inviteUrl = `${process.env.FRONTEND_URL}/accept-invite?token=${token}`;
 
-  await sendEmail({
+  await addEmailJob({
     to: email,
     subject: `You've been invited to join ${org.name} on Nubilus`,
     html: `
@@ -163,11 +163,14 @@ export async function inviteMember(req: Request, res: Response) {
 export async function acceptInvite(req: Request, res: Response) {
   const token = req.query.token;
 
+  console.log(token);
   if (!token || typeof token !== "string") {
     throw new AppError("Invite token is required", 400);
   }
+  console.log("came here");
 
   const { userId, mustSetPassword } = await acceptOrgInvite({ token });
+  console.log("came here 2");
 
   const session = await createSession({
     req,
@@ -201,7 +204,7 @@ export async function getAllMembers(req: Request, res: Response) {
   if (!userId) throw new AppError("Unauthorized", 401);
   if (!orgId) throw new AppError("Organization ID required", 400);
 
-  const hasAccess = await userHasOrgPermission(userId, orgId, "read");
+  const hasAccess = await userHasOrgPermission(userId, orgId, "manage");
   if (!hasAccess) throw new AppError("Access denied", 403);
 
   const acceptedStatus = ["active", "suspended"];
@@ -313,6 +316,7 @@ export async function updateOrgSettingsController(req: Request, res: Response) {
     webhook_url,
     webhook_secret,
     webhook_enabled,
+    notification_emails,
   } = req.body;
 
   if (!currentUserId) throw new AppError("Unauthorized", 401);
@@ -329,6 +333,7 @@ export async function updateOrgSettingsController(req: Request, res: Response) {
     notify_on_new_member,
     notify_on_server_offline,
     notify_on_alert_triggered,
+    notification_emails,
     webhook_url,
     webhook_secret,
     webhook_enabled,

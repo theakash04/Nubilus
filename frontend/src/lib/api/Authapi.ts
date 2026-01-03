@@ -98,3 +98,17 @@ export async function logoutUser(): Promise<ApiResponse> {
 
   return res.data;
 }
+
+export async function acceptInvite(
+  token: string
+): Promise<ApiResponse<{ mustSetPassword: boolean }>> {
+  const res = await api.get<ApiResponse<{ mustSetPassword: boolean }>>(
+    `/org/invite/accept?token=${token}`
+  );
+  return res.data;
+}
+
+export async function setPassword(password: string): Promise<ApiResponse> {
+  const res = await api.post<ApiResponse>("/auth/set-password", { password });
+  return res.data;
+}
