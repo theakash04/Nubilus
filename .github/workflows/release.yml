@@ -57,7 +57,7 @@ jobs:
       - name: Build release binary
         run: |
           cd agent
-          API_URL=https://nubilus.akashtwt.me/api cross build --release --target ${{ matrix.target }}
+          cross build --release --target ${{ matrix.target }}
 
       - name: Rename binary
         run: |
@@ -106,7 +106,7 @@ jobs:
       - name: Build release binary
         run: |
           cd agent
-          API_URL=https://nubilus.akashtwt.me/api cargo build --release --target ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }}
 
       - name: Rename binary
         run: |

@@ -82,6 +82,30 @@ export async function updateServerLastSeen(id: string): Promise<void> {
   `;
 }
 
+export async function updateServerOnReconnect(
+  id: string,
+  data: {
+    agent_version?: string;
+    os_type?: string;
+    os_version?: string;
+    hostname?: string;
+    ip_address?: string;
+  }
+): Promise<void> {
+  await sql`
+    UPDATE servers 
+    SET 
+      last_seen_at = NOW(), 
+      status = 'active',
+      agent_version = COALESCE(${data.agent_version ?? null}, agent_version),
+      os_type = COALESCE(${data.os_type ?? null}, os_type),
+      os_version = COALESCE(${data.os_version ?? null}, os_version),
+      hostname = COALESCE(${data.hostname ?? null}, hostname),
+      ip_address = COALESCE(${data.ip_address ?? null}::inet, ip_address)
+    WHERE id = ${id}::uuid
+  `;
+}
+
 export async function getServerMetrics(
   serverId: string,
   from?: Date,

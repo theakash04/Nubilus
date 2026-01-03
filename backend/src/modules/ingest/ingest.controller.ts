@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import { AppError, sendResponse } from "../../utils/handler";
-import { createServer, getServerByApiKeyId, updateServerLastSeen } from "../../db/queries/servers";
+import {
+  createServer,
+  getServerByApiKeyId,
+  updateServerLastSeen,
+  updateServerOnReconnect,
+} from "../../db/queries/servers";
 import { insertServerMetrics } from "../../db/queries/ingest";
 import { insertHealthCheck } from "../../db/queries/endpoints";
 import { RegisterServerInput, SubmitHealthCheckInput, SubmitMetricsInput } from "./ingest.types";
@@ -11,7 +16,15 @@ export async function registerServer(req: Request, res: Response) {
 
   const existing = await getServerByApiKeyId(apiKey.id);
   if (existing) {
-    await updateServerLastSeen(existing.id);
+    // Update server info (agent_version, os_type, etc.) on reconnect
+    const data = req.body as RegisterServerInput;
+    await updateServerOnReconnect(existing.id, {
+      agent_version: data.agent_version,
+      os_type: data.os_type,
+      os_version: data.os_version,
+      hostname: data.hostname,
+      ip_address: data.ip_address,
+    });
     sendResponse(res, 200, "Server already registered", { server_id: existing.id });
     return;
   }
