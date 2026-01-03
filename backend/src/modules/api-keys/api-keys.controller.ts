@@ -1,13 +1,20 @@
 import { Request, Response } from "express";
 import { AppError, sendResponse } from "../../utils/handler";
-import { userHasOrgPermission } from "../../db/queries/org";
+import {
+  getOrgSettings,
+  userHasOrgPermission,
+  getOrgAdminEmails,
+  getOrganizationById,
+} from "../../db/queries/org";
 import {
   createApiKey,
   generateApiKey,
   getApiKeysByOrgId,
   revokeApiKey,
 } from "../../db/queries/api-keys";
+import { getServerByApiKeyId, deleteServer } from "../../db/queries/servers";
 import { CreateApiKeyInput } from "./api-keys.types";
+import { addEmailJob } from "../../queues";
 
 export async function listApiKeys(req: Request, res: Response) {
   const userId = req.user?.userId;
@@ -56,8 +63,52 @@ export async function deleteKey(req: Request, res: Response) {
   const hasAccess = await userHasOrgPermission(userId, orgId, "manage");
   if (!hasAccess) throw new AppError("Access denied", 403);
 
+  // Get associated server before revoking
+  const server = await getServerByApiKeyId(keyId);
+  const serverName = server?.name || "Unknown Server";
+
+  // Revoke the API key
   const revoked = await revokeApiKey(keyId, orgId);
   if (!revoked) throw new AppError("API key not found", 404);
 
-  sendResponse(res, 200, "API key revoked");
+  // Delete associated server if exists
+  if (server) {
+    await deleteServer(server.id, orgId);
+  }
+
+  // Send notification to admins
+  try {
+    const settings = await getOrgSettings(orgId);
+
+    if (settings && settings.notify_on_server_offline) {
+      let recipients = settings.notification_emails;
+
+      if (!recipients || recipients.length === 0) {
+        recipients = await getOrgAdminEmails(orgId);
+      }
+
+      const org = await getOrganizationById(orgId);
+      const orgName = org?.name || "your organization";
+
+      for (const recipient of recipients) {
+        await addEmailJob({
+          to: recipient,
+          subject: `API Key Revoked: ${serverName} removed`,
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+              <h2>API Key Revoked</h2>
+              <p>An API key has been revoked in <strong>${orgName}</strong>.</p>
+              <p>The associated server <strong>${serverName}</strong> has been removed from monitoring.</p>
+              <br/>
+              <a href="${process.env.FRONTEND_URL}/dashboard/${orgId}/servers" style="color: #0d9488;">View Servers</a>
+            </div>
+          `,
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Failed to send API key revocation notification:", error);
+  }
+
+  sendResponse(res, 200, "API key revoked and server removed");
 }
