@@ -5,7 +5,8 @@ import path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 dotenv.config();
 
-const DATABASE_URL = `postgresql://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@localhost:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}`;
+const host = process.env.POSTGRES_HOST || "localhost";
+const DATABASE_URL = `postgresql://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${host}:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}`;
 console.log(DATABASE_URL);
 
 export const sql = postgres(DATABASE_URL, {

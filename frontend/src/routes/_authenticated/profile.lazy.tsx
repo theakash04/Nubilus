@@ -6,7 +6,6 @@ import { useUser, useLogout } from "@/hooks/useAuthActions";
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
-  CloudLightning,
   Layout,
   LogOut,
   Moon,

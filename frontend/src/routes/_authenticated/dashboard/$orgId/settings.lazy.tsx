@@ -8,7 +8,6 @@ import {
   useOrgSettings,
   useUpdateOrgSettings,
 } from "@/hooks/useOrganization";
-import { usePermissions } from "@/hooks/usePermissions";
 import { createLazyFileRoute } from "@tanstack/react-router";
 import {
   Bell,

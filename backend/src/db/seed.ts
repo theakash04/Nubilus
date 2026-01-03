@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { createNewUser } from "./queries/users";
+import { createNewUser, getUserByEmail } from "./queries/users";
 import bcrypt from "bcrypt";
 import path from "path";
 
@@ -16,14 +16,26 @@ async function seedUser() {
   if (!name || !email || !password) {
     throw new Error("Missing required environment variables: UNAME, UEMAIL, UPASS");
   }
+
+  const existingUser = await getUserByEmail(email);
+  if (existingUser) {
+    console.log("User already exists, skipping seed.");
+    return;
+  }
+
   const hashedPass = await bcrypt.hash(password, saltRounds);
   await createNewUser({ name, email, password: hashedPass });
   console.log("user created successfully!");
 }
 
 async function seed() {
-  await seedUser();
-  process.exit(1);
+  try {
+    await seedUser();
+    process.exit(0);
+  } catch (error) {
+    console.error("Seeding failed:", error);
+    process.exit(1);
+  }
 }
 
 seed();

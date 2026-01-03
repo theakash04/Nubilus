@@ -14,10 +14,20 @@ async function runMigrations() {
       );
     `;
 
-    const migrationsDir = path.join(process.cwd(), "src/db/migrations");
+    const localMigrationsDir = path.join(process.cwd(), "src/db/migrations");
+    const distMigrationsDir = path.join(process.cwd(), "dist/db/migrations");
 
-    if (!fs.existsSync(migrationsDir)) {
-      console.error("Migrations folder not found:", migrationsDir);
+    let migrationsDir = localMigrationsDir;
+
+    if (fs.existsSync(distMigrationsDir)) {
+      migrationsDir = distMigrationsDir;
+    } else if (!fs.existsSync(localMigrationsDir)) {
+      console.error(
+        "Migrations folder not found. Checked:",
+        localMigrationsDir,
+        "and",
+        distMigrationsDir
+      );
       process.exit(1);
     }
 
