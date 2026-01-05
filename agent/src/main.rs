@@ -404,6 +404,8 @@ fn format_bytes(bytes: i64) -> String {
 
 /// Update the agent to the latest version
 async fn update_agent() -> Result<()> {
+    use std::process::Command;
+    
     const GITHUB_RELEASE_URL: &str = "https://github.com/theakash04/Nubilus/releases/latest/download";
     
     let current_version = env!("CARGO_PKG_VERSION");
@@ -466,16 +468,9 @@ async fn update_agent() -> Result<()> {
         std::fs::set_permissions(&temp_path, perms)?;
     }
 
-    // Backup old binary
-    let backup_path = current_exe.with_extension("old");
-    if backup_path.exists() {
-        std::fs::remove_file(&backup_path).ok();
-    }
-    
-    // Replace the current binary
-    // On Unix: rename old -> backup, then new -> current
-    std::fs::rename(&current_exe, &backup_path)
-        .context("Failed to backup current binary. Try running with sudo.")?;
+    // Delete old binary and install new one
+    std::fs::remove_file(&current_exe)
+        .context("Failed to remove old binary. Try running with sudo.")?;
     
     std::fs::rename(&temp_path, &current_exe)
         .context("Failed to install new binary")?;
@@ -483,7 +478,10 @@ async fn update_agent() -> Result<()> {
     info!("✓ Update successful!");
     info!("");
     info!("The agent has been updated. Please restart the service:");
-    info!("  sudo systemctl restart nubilus-agent");
+    info!("Restarting nubilus-agent service...");
+    let _ = Command::new("systemctl")
+        .args(["restart", "nubilus-agent"])
+        .output();
     info!("");
     info!("Or if running manually, restart the agent.");
 
@@ -544,8 +542,7 @@ fn uninstall_agent(keep_config: bool) -> Result<()> {
     // Create a small script that will delete us after we exit
     let cleanup_script = "/tmp/nubilus-cleanup.sh";
     let script_content = format!(
-        "#!/bin/bash\nsleep 1\nrm -f \"{}\"\nrm -f \"{}.old\"\nrm -f \"{}\"\n",
-        current_exe.display(),
+        "#!/bin/bash\nsleep 1\nrm -f \"{}\"\nrm -f \"{}\"\n",
         current_exe.display(),
         cleanup_script
     );

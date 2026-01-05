@@ -207,24 +207,24 @@ EOF
     echo "Next steps:"
     echo ""
     echo "  1. Edit the configuration file:"
-    echo "     ${YELLOW}sudo nano ${CONFIG_DIR}/agent.toml${NC}"
+    echo -e "     ${YELLOW}sudo nano ${CONFIG_DIR}/agent.toml${NC}"
     echo ""
     echo "  2. Set your API key (get it from your Nubilus dashboard)"
     echo ""
     echo "  3. Start the agent:"
     if [ "$OS" = "linux" ] && command -v systemctl &> /dev/null; then
-        echo "     ${YELLOW}sudo systemctl enable --now nubilus-agent${NC}"
+        echo -e "     ${YELLOW}sudo systemctl enable --now nubilus-agent${NC}"
         echo ""
         echo "  Or run manually:"
-        echo "     ${YELLOW}nubilus-agent run${NC}"
+        echo -e "     ${YELLOW}nubilus-agent run${NC}"
     else
-        echo "     ${YELLOW}nubilus-agent run${NC}"
+        echo -e "     ${YELLOW}nubilus-agent run${NC}"
     fi
     echo ""
     echo "  4. Check logs (Linux with systemd):"
-    echo "     ${YELLOW}journalctl -u nubilus-agent -f${NC}"
+    echo -e "     ${YELLOW}journalctl -u nubilus-agent -f${NC}"
     echo ""
-    echo "For help: ${YELLOW}nubilus-agent --help${NC}"
+    echo -e "For help: ${YELLOW}nubilus-agent --help${NC}"
     echo ""
 }
 
