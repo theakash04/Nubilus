@@ -6,6 +6,7 @@ import type { Organization } from "@/lib/types/org.types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
+  BookOpen,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -308,6 +309,15 @@ export const AppLayout: React.FC<{
           <div
             className={`flex items-center ${sidebarCollapsed && !isMobile ? "flex-col space-y-2" : "space-x-1"}`}
           >
+            <a
+              href="https://nubilus-docs.akashtwt.me"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors cursor-pointer"
+              title="Documentation"
+            >
+              <BookOpen className="h-4 w-4" />
+            </a>
             <button
               onClick={() =>
                 setUserTheme(currentTheme === "dark" ? "light" : "dark")

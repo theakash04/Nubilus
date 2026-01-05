@@ -164,7 +164,7 @@ export default function RouteComponent() {
       </main>
 
       <footer className="py-6 text-center text-sm text-muted-foreground">
-        Nubilus Infrastructure Monitoring &copy; 2024
+        Nubilus Infrastructure Monitoring • MIT License
       </footer>
 
       <Modal
