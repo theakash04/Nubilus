@@ -24,25 +24,14 @@ pub fn collect(_system: &System) -> DiskMetrics {
     let mut total: u64 = 0;
     let mut available: u64 = 0;
 
-    // Aggregate all mounted disks
+    // Only report the root (/) partition - this gives the most accurate
+    // representation of available disk space for most use cases
     for disk in disks.list() {
-        let fs_type = disk.file_system().to_str().unwrap_or("").to_lowercase();
-        
-        // Filter out virtual filesystems and read-only snap loops
-        let is_virtual = fs_type == "overlay" 
-            || fs_type == "squashfs" 
-            || fs_type == "tmpfs" 
-            || fs_type == "devtmpfs"
-            || fs_type == "autofs"
-            || fs_type == "proc"
-            || fs_type == "sysfs";
-
-        if is_virtual {
-            continue;
+        if disk.mount_point() == std::path::Path::new("/") {
+            total = disk.total_space();
+            available = disk.available_space();
+            break;
         }
-
-        total += disk.total_space();
-        available += disk.available_space();
     }
 
     let used = total.saturating_sub(available);
