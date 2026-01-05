@@ -1,4 +1,5 @@
 import { useLogout, useUser } from "@/hooks/useAuthActions";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { useTheme } from "@/hooks/useTheme";
 import { ListMyOrgs, createOrg } from "@/lib/api/organizations.api";
 import { getNavItemsForOrg, routeLabels } from "@/lib/config/navigation";
@@ -12,13 +13,13 @@ import {
   ChevronLeft,
   ChevronRight,
   CloudLightning,
+  Download,
   LogOut,
   Menu,
   Moon,
   Plus,
   Search,
-  Sun,
-  X,
+  Sun
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../ui/Button";
@@ -51,6 +52,7 @@ export const AppLayout: React.FC<{
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, setUserTheme, currentTheme } = useTheme();
+  const { canShowInstall, installApp } = usePWAInstall();
 
   // Fetch organizations from TanStack Query (same cache as dashboard)
   const { data: orgsResponse } = useQuery({
@@ -282,6 +284,38 @@ export const AppLayout: React.FC<{
         </nav>
       </div>
 
+      {/* Documentation Section */}
+      <div
+        className={`px-4 py-3 border-t border-border ${sidebarCollapsed && !isMobile ? "flex justify-center" : ""}`}
+      >
+        <a
+          href="https://nubilus-docs.akashtwt.me"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex items-center gap-2 w-full px-3 py-2 text-sm font-medium rounded-lg bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer ${sidebarCollapsed && !isMobile ? "justify-center w-auto px-2" : ""}`}
+          title="Documentation"
+        >
+          <BookOpen className="h-4 w-4 shrink-0" />
+          {(!sidebarCollapsed || isMobile) && <span>Documentation</span>}
+        </a>
+      </div>
+
+      {/* Install App Section */}
+      {canShowInstall && (
+        <div
+          className={`px-4 py-3 ${sidebarCollapsed && !isMobile ? "flex justify-center" : ""}`}
+        >
+          <button
+            onClick={installApp}
+            className={`flex items-center gap-2 w-full px-3 py-2 text-sm font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer ${sidebarCollapsed && !isMobile ? "justify-center w-auto px-2" : ""}`}
+            title="Install App"
+          >
+            <Download className="h-4 w-4 shrink-0" />
+            {(!sidebarCollapsed || isMobile) && <span>Install App</span>}
+          </button>
+        </div>
+      )}
+
       {/* User Footer */}
       <div className="p-4 border-t border-border">
         <div
@@ -309,15 +343,6 @@ export const AppLayout: React.FC<{
           <div
             className={`flex items-center ${sidebarCollapsed && !isMobile ? "flex-col space-y-2" : "space-x-1"}`}
           >
-            <a
-              href="https://nubilus-docs.akashtwt.me"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors cursor-pointer"
-              title="Documentation"
-            >
-              <BookOpen className="h-4 w-4" />
-            </a>
             <button
               onClick={() =>
                 setUserTheme(currentTheme === "dark" ? "light" : "dark")
@@ -352,14 +377,6 @@ export const AppLayout: React.FC<{
             onClick={() => setMobileMenuOpen(false)}
           ></div>
           <div className="fixed inset-y-0 left-0 w-72 bg-background shadow-2xl transform transition-transform duration-300 ease-in-out border-r border-border flex flex-col">
-            <div className="absolute top-4 right-4">
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
             <SidebarContent isMobile={true} />
           </div>
         </div>
