@@ -1,6 +1,5 @@
 import { Card } from "@/components/ui/Card";
 import { ServerMetricsChart } from "@/components/ServerMetricsChart";
-import { useServerSettings } from "@/hooks/useServers";
 import type { ServerMetric } from "@/lib/types/monitoring.types";
 import {
   Activity,
@@ -40,15 +39,6 @@ export function ServerOverviewTab({
   latestMetric,
   metricsLoading,
 }: ServerOverviewTabProps) {
-  const { data: settingsData } = useServerSettings(orgId, serverId);
-  const thresholds = settingsData?.data
-    ? {
-        cpu: settingsData.data.cpu_threshold ?? 90,
-        memory: settingsData.data.memory_threshold ?? 90,
-        disk: settingsData.data.disk_threshold ?? 85,
-      }
-    : undefined;
-
   return (
     <>
       <section>

@@ -86,7 +86,7 @@ export function useDashboardStats(
     databasesQuery.isLoading ||
     alertsQuery.isLoading;
 
-  const activeAlerts = alerts.filter((a) => a.status === "active");
+  const activeAlerts = alerts.filter((a) => a.status === "open");
 
   const stats = {
     totalServers: servers.length,

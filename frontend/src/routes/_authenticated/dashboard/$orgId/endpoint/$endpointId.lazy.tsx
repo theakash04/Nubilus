@@ -1,3 +1,4 @@
+import { ComingSoon } from "@/components/ComingSoon";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
 export const Route = createLazyFileRoute(
@@ -7,7 +8,5 @@ export const Route = createLazyFileRoute(
 });
 
 function RouteComponent() {
-  return (
-    <div>Hello "/_authenticated/dashboard/$orgId/endpoint/$endpointId"!</div>
-  );
+  return <ComingSoon />;
 }
