@@ -289,7 +289,7 @@ export const AppLayout: React.FC<{
         className={`px-4 py-3 border-t border-border ${sidebarCollapsed && !isMobile ? "flex justify-center" : ""}`}
       >
         <a
-          href="https://nubilus-docs.akashtwt.me"
+          href={process.env.VITE_DOCS_URL}
           target="_blank"
           rel="noopener noreferrer"
           className={`flex items-center gap-2 w-full px-3 py-2 text-sm font-medium rounded-lg bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer ${sidebarCollapsed && !isMobile ? "justify-center w-auto px-2" : ""}`}

@@ -70,6 +70,7 @@ services:
       dockerfile: frontend.Dockerfile
       args:
         - VITE_BASE_URL=${VITE_BASE_URL:-http://localhost:8080/api}
+        - VITE_DOCS_URL=${VITE_DOCS_URL:-http://localhost:3000}
     container_name: nubilus-frontend
     restart: always
     ports:
