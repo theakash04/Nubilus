@@ -15,6 +15,7 @@ COPY frontend .
 # Build args
 ARG VITE_BASE_URL
 ENV VITE_BASE_URL=$VITE_BASE_URL
+ENV VITE_DOCS_URL=$VITE_DOCS_URL
 
 # Build the application
 RUN npm run build

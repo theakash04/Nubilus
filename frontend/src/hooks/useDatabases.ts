@@ -5,7 +5,10 @@ import {
   getDatabaseMetrics,
   createDatabase,
   deleteDatabase,
+  getDatabaseSettings,
+  updateDatabaseSettings,
 } from "@/lib/api/databases.api";
+import type { UpdateDatabaseSettingsInput } from "@/lib/types/monitoring.types";
 
 export function useDatabases(orgId: string) {
   return useQuery({
@@ -54,6 +57,29 @@ export function useDeleteDatabase(orgId: string) {
     mutationFn: (dbId: string) => deleteDatabase(orgId, dbId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["org", orgId, "databases"] });
+    },
+  });
+}
+
+export function useDatabaseSettings(orgId: string, dbId: string) {
+  return useQuery({
+    queryKey: ["org", orgId, "databases", dbId, "settings"],
+    queryFn: () => getDatabaseSettings(orgId, dbId),
+    enabled: !!orgId && !!dbId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function useUpdateDatabaseSettings(orgId: string, dbId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateDatabaseSettingsInput) =>
+      updateDatabaseSettings(orgId, dbId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["org", orgId, "databases", dbId, "settings"],
+      });
     },
   });
 }

@@ -34,7 +34,6 @@ export function ServersStatusCard({
             Servers
           </h3>
         </div>
-        <span className="text-xs text-muted-foreground">Top {limit}</span>
       </div>
 
       {isLoading ? (

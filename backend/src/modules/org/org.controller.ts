@@ -198,7 +198,7 @@ export async function acceptInvite(req: Request, res: Response) {
                 <p><strong>${fullName}</strong> (${email}) has just joined your organization.</p>
                 <p>Role/Permissions have been assigned as per the invitation.</p>
                 <br/>
-                <a href="${process.env.FRONTEND_URL}/dashboard/${orgId}/members" style="color: #0d9488;">View Members</a>
+                <a href="${process.env.FRONTEND_URL}/dashboard/${orgId}/users" style="color: #0d9488;">View Members</a>
               </div>
             `,
             })

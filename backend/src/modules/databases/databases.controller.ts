@@ -9,7 +9,13 @@ import {
   getDatabaseTargetsByOrgId,
   updateDatabaseTarget,
 } from "../../db/queries/databases";
-import { CreateDatabaseTargetInput, DatabaseMetricsQuery, UpdateDatabaseTargetInput } from "./databases.types";
+import { getDatabaseSettings, updateDatabaseSettings } from "../../db/queries/settings";
+import {
+  CreateDatabaseTargetInput,
+  DatabaseMetricsQuery,
+  UpdateDatabaseSettingsInput,
+  UpdateDatabaseTargetInput,
+} from "./databases.types";
 
 export async function listDatabaseTargets(req: Request, res: Response) {
   const userId = req.user?.userId;
@@ -107,4 +113,38 @@ export async function getDatabaseMetricsHandler(req: Request, res: Response) {
 
   const metrics = await getDatabaseMetrics(dbId, fromDate, toDate, limitNum);
   sendResponse(res, 200, "Database metrics retrieved", { metrics });
+}
+
+export async function getDatabaseSettingsHandler(req: Request, res: Response) {
+  const userId = req.user?.userId;
+  const { orgId, dbId } = req.params;
+
+  if (!userId) throw new AppError("Unauthorized", 401);
+
+  const hasAccess = await userHasOrgPermission(userId, orgId, "write");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  const database = await getDatabaseTargetById(dbId, orgId);
+  if (!database) throw new AppError("Database target not found", 404);
+
+  const settings = await getDatabaseSettings(dbId);
+  sendResponse(res, 200, "Database settings retrieved", settings);
+}
+
+export async function updateDatabaseSettingsHandler(req: Request, res: Response) {
+  const userId = req.user?.userId;
+  const { orgId, dbId } = req.params;
+
+  if (!userId) throw new AppError("Unauthorized", 401);
+
+  const hasAccess = await userHasOrgPermission(userId, orgId, "write");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  const database = await getDatabaseTargetById(dbId, orgId);
+  if (!database) throw new AppError("Database target not found", 404);
+
+  const updates = req.body as UpdateDatabaseSettingsInput;
+  const settings = await updateDatabaseSettings(dbId, updates);
+
+  sendResponse(res, 200, "Database settings updated", settings);
 }

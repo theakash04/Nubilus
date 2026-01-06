@@ -54,7 +54,6 @@ export default function RouteComponent() {
     try {
       const org = await createOrg({ name: newOrgName });
       if (!org.success) {
-        console.log(org.message);
         return;
       }
 

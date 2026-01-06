@@ -171,7 +171,6 @@ export async function getActiveSessions(req: Request, res: Response) {
       email: string;
     };
   } catch (error) {
-    console.log(error);
     throw new AppError("Invalid or expired authorization token", 401);
   }
 

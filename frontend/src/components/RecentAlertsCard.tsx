@@ -1,6 +1,13 @@
 import { useAlerts } from "@/hooks/useAlerts";
 import { Card } from "@/components/ui/Card";
-import { AlertCircle, Loader2, Bell, CheckCircle } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  Bell,
+  CheckCircle,
+  ArrowRight,
+} from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 interface RecentAlertsCardProps {
   orgId: string;
@@ -9,7 +16,14 @@ interface RecentAlertsCardProps {
 
 export function RecentAlertsCard({ orgId, limit = 5 }: RecentAlertsCardProps) {
   const { data: alertsData, isLoading } = useAlerts(orgId);
-  const alerts = (alertsData?.data?.alerts || []).slice(0, limit);
+  const allAlerts = alertsData?.data?.alerts || [];
+  const alerts = allAlerts.slice(0, limit);
+  const hasMore = allAlerts.length > limit;
+
+  // Get the first server with alerts to link to
+  const firstServerWithAlerts = alerts.find(
+    (a) => a.target_type === "server"
+  )?.target_id;
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -36,9 +50,10 @@ export function RecentAlertsCard({ orgId, limit = 5 }: RecentAlertsCardProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "resolved":
-        return <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />;
+        return <CheckCircle className="h-3.5 w-3.5 text-green-500" />;
       case "acknowledged":
         return <Bell className="h-3.5 w-3.5 text-amber-500" />;
+      case "open":
       default:
         return <AlertCircle className="h-3.5 w-3.5 text-rose-500" />;
     }
@@ -69,7 +84,17 @@ export function RecentAlertsCard({ orgId, limit = 5 }: RecentAlertsCardProps) {
             Recent Alerts
           </h3>
         </div>
-        <span className="text-xs text-muted-foreground">Recent</span>
+        {firstServerWithAlerts && hasMore && (
+          <Link
+            to="/dashboard/$orgId/server/$serverId"
+            params={{ orgId, serverId: firstServerWithAlerts }}
+            search={{ tab: "alerts" }}
+            className="text-xs text-primary hover:underline flex items-center gap-1"
+          >
+            View All
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        )}
       </div>
 
       {isLoading ? (
@@ -84,8 +109,19 @@ export function RecentAlertsCard({ orgId, limit = 5 }: RecentAlertsCardProps) {
       ) : (
         <div className="space-y-3">
           {alerts.map((alert) => (
-            <div
+            <Link
               key={alert.id}
+              to={
+                alert.target_type === "server" && alert.target_id
+                  ? "/dashboard/$orgId/server/$serverId"
+                  : "/dashboard/$orgId"
+              }
+              params={
+                alert.target_type === "server" && alert.target_id
+                  ? { orgId, serverId: alert.target_id }
+                  : { orgId }
+              }
+              search={alert.target_type === "server" ? { tab: "alerts" } : {}}
               className="flex items-start justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
             >
               <div className="flex items-start space-x-3 min-w-0 flex-1">
@@ -109,10 +145,10 @@ export function RecentAlertsCard({ orgId, limit = 5 }: RecentAlertsCardProps) {
                 </span>
                 <span className="text-xs text-muted-foreground flex items-center space-x-1">
                   {getStatusIcon(alert.status)}
-                  <span>{formatTime(alert.triggeredAt)}</span>
+                  <span>{formatTime(alert.fired_at)}</span>
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

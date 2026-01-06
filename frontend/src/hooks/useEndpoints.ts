@@ -5,7 +5,10 @@ import {
   getEndpointChecks,
   createEndpoint,
   deleteEndpoint,
+  getEndpointSettings,
+  updateEndpointSettings,
 } from "@/lib/api/endpoints.api";
+import type { UpdateEndpointSettingsInput } from "@/lib/types/monitoring.types";
 
 export function useEndpoints(orgId: string) {
   return useQuery({
@@ -54,6 +57,29 @@ export function useDeleteEndpoint(orgId: string) {
     mutationFn: (endpointId: string) => deleteEndpoint(orgId, endpointId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["org", orgId, "endpoints"] });
+    },
+  });
+}
+
+export function useEndpointSettings(orgId: string, endpointId: string) {
+  return useQuery({
+    queryKey: ["org", orgId, "endpoints", endpointId, "settings"],
+    queryFn: () => getEndpointSettings(orgId, endpointId),
+    enabled: !!orgId && !!endpointId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function useUpdateEndpointSettings(orgId: string, endpointId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateEndpointSettingsInput) =>
+      updateEndpointSettings(orgId, endpointId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["org", orgId, "endpoints", endpointId, "settings"],
+      });
     },
   });
 }

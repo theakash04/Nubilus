@@ -8,6 +8,7 @@ import {
 } from "../../db/queries/servers";
 import { insertServerMetrics } from "../../db/queries/ingest";
 import { insertHealthCheck } from "../../db/queries/endpoints";
+import { checkAndTriggerAlerts, autoResolveAlerts } from "../../db/queries/alertTrigger";
 import { RegisterServerInput, SubmitHealthCheckInput, SubmitMetricsInput } from "./ingest.types";
 
 export async function registerServer(req: Request, res: Response) {
@@ -44,8 +45,26 @@ export async function submitMetrics(req: Request, res: Response) {
   if (!server) throw new AppError("Server not registered. Call /ingest/register first", 404);
 
   const data = req.body as SubmitMetricsInput;
+
+  // Store metrics
   await insertServerMetrics(server.id, data);
   await updateServerLastSeen(server.id);
+
+  // Check thresholds and trigger alerts (non-blocking)
+  checkAndTriggerAlerts(server.id, {
+    cpu_usage: data.cpu_usage,
+    memory_usage: data.memory_usage,
+    disk_usage: data.disk_usage,
+    load_average_1m: data.load_average_1m,
+  }).catch(err => console.error("Alert check failed:", err));
+
+  // Auto-resolve alerts when metrics return to normal (non-blocking)
+  autoResolveAlerts(server.id, {
+    cpu_usage: data.cpu_usage,
+    memory_usage: data.memory_usage,
+    disk_usage: data.disk_usage,
+    load_average_1m: data.load_average_1m,
+  }).catch(err => console.error("Auto-resolve failed:", err));
 
   sendResponse(res, 200, "Metrics recorded");
 }

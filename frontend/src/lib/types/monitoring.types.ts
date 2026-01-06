@@ -43,77 +43,79 @@ export interface Endpoint {
   name: string;
   url: string;
   method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
-  expectedStatus: number;
-  checkInterval: number;
+  expected_status: number;
+  check_interval: number;
   timeout: number;
   status: "healthy" | "unhealthy" | "pending";
-  lastCheckedAt: string | null;
+  last_checked_at: string | null;
   tags: string[];
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface EndpointCheck {
   id: string;
-  endpointId: string;
+  endpoint_id: string;
   status: "success" | "failure";
-  responseTime: number;
-  statusCode: number | null;
-  errorMessage: string | null;
-  checkedAt: string;
+  response_time: number;
+  status_code: number | null;
+  error_message: string | null;
+  checked_at: string;
 }
 
 // Database types
 export interface DatabaseTarget {
   id: string;
-  orgId: string;
+  org_id: string;
   name: string;
   type: "postgresql" | "mysql" | "mongodb" | "redis";
   host: string;
   port: number;
   status: "connected" | "disconnected" | "error";
-  lastCheckedAt: string | null;
+  last_checked_at: string | null;
   tags: string[];
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DatabaseMetric {
   id: string;
-  databaseId: string;
-  connectionCount: number;
-  queryTime: number;
-  cacheHitRatio: number | null;
-  replicationLag: number | null;
+  database_id: string;
+  connection_count: number;
+  query_time: number;
+  cache_hit_ratio: number | null;
+  replication_lag: number | null;
   timestamp: string;
 }
 
 // Alert types
 export interface Alert {
   id: string;
-  orgId: string;
-  ruleId: string;
+  org_id: string;
   severity: "info" | "warning" | "critical";
-  status: "active" | "acknowledged" | "resolved";
+  status: "open" | "acknowledged" | "resolved";
   title: string;
   message: string;
-  triggeredAt: string;
-  acknowledgedAt: string | null;
-  resolvedAt: string | null;
+  fired_at: string;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+  target_type: "server" | "endpoint" | "database" | null;
+  target_id: string | null;
+  metric_value: number | null;
 }
 
 export interface AlertRule {
   id: string;
-  orgId: string;
+  org_id: string;
   name: string;
   type: "server" | "endpoint" | "database";
-  targetId: string | null;
+  target_id: string | null;
   condition: string;
   threshold: number;
   severity: "info" | "warning" | "critical";
   enabled: boolean;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // API Key types
@@ -126,4 +128,63 @@ export interface ApiKey {
   last_used_at: string | null;
   expires_at: string | null;
   is_active: boolean;
+}
+
+// Settings types
+export interface ServerSettings {
+  id: string;
+  server_id: string;
+  cpu_threshold: number | null;
+  memory_threshold: number | null;
+  disk_threshold: number | null;
+  load_threshold: number | null;
+  alert_cooldown_minutes: number | null;
+  alerts_enabled: boolean;
+  notify_email: boolean | null;
+  notify_webhook: boolean | null;
+  notification_emails: string[] | null;
+}
+
+export interface UpdateServerSettingsInput {
+  cpu_threshold?: number | null;
+  memory_threshold?: number | null;
+  disk_threshold?: number | null;
+  load_threshold?: number | null;
+  alert_cooldown_minutes?: number | null;
+  alerts_enabled?: boolean;
+  notify_email?: boolean | null;
+  notify_webhook?: boolean | null;
+  notification_emails?: string[] | null;
+}
+
+export interface EndpointSettings {
+  id: string;
+  endpoint_id: string;
+  alerts_enabled: boolean;
+  alert_on_down: boolean;
+  consecutive_failures_before_alert: number;
+  alert_cooldown_minutes: number | null;
+}
+
+export interface UpdateEndpointSettingsInput {
+  alerts_enabled?: boolean;
+  alert_on_down?: boolean;
+  consecutive_failures_before_alert?: number;
+  alert_cooldown_minutes?: number | null;
+}
+
+export interface DatabaseSettings {
+  id: string;
+  database_id: string;
+  alerts_enabled: boolean;
+  alert_on_down: boolean;
+  consecutive_failures_before_alert: number;
+  alert_cooldown_minutes: number | null;
+}
+
+export interface UpdateDatabaseSettingsInput {
+  alerts_enabled?: boolean;
+  alert_on_down?: boolean;
+  consecutive_failures_before_alert?: number;
+  alert_cooldown_minutes?: number | null;
 }

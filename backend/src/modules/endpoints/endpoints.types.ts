@@ -27,3 +27,10 @@ export interface HealthCheckQuery {
   to?: string;
   limit?: number;
 }
+
+export interface UpdateEndpointSettingsInput {
+  alerts_enabled?: boolean;
+  alert_on_down?: boolean;
+  consecutive_failures_before_alert?: number;
+  alert_cooldown_minutes?: number | null;
+}

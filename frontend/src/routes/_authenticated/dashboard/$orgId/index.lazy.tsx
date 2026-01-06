@@ -1,4 +1,5 @@
 import { EndpointsStatusCard } from "@/components/EndpointsStatusCard";
+import { RecentAlertsCard } from "@/components/RecentAlertsCard";
 import { ResourceUsageChart } from "@/components/ResourceUsageChart";
 import { ServersStatusCard } from "@/components/ServersStatusCard";
 import { Button } from "@/components/ui/Button";
@@ -200,9 +201,9 @@ function RouteComponent() {
         </div>
 
         {/* Recent Alerts */}
-        {/* <div className="lg:col-span-1">
+        <div className="lg:col-span-3">
           <RecentAlertsCard orgId={orgId} limit={4} />
-        </div> */}
+        </div>
       </div>
 
       {/* Status Cards Grid */}

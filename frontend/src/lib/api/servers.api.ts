@@ -1,5 +1,10 @@
 import type { ApiResponse } from "../types/auth.types";
-import type { Server, ServerMetric } from "../types/monitoring.types";
+import type {
+  Server,
+  ServerMetric,
+  ServerSettings,
+  UpdateServerSettingsInput,
+} from "../types/monitoring.types";
 import api from "./AxiosInstance";
 
 export async function listServers(orgId: string) {
@@ -36,5 +41,24 @@ export async function getServerMetrics(
   const url = `/org/${orgId}/servers/${serverId}/metrics${queryString ? `?${queryString}` : ""}`;
 
   const res = await api.get<ApiResponse<{ metrics: ServerMetric[] }>>(url);
+  return res.data;
+}
+
+export async function getServerSettings(orgId: string, serverId: string) {
+  const res = await api.get<ApiResponse<ServerSettings>>(
+    `/org/${orgId}/servers/${serverId}/settings`
+  );
+  return res.data;
+}
+
+export async function updateServerSettings(
+  orgId: string,
+  serverId: string,
+  data: UpdateServerSettingsInput
+) {
+  const res = await api.put<ApiResponse<ServerSettings>>(
+    `/org/${orgId}/servers/${serverId}/settings`,
+    data
+  );
   return res.data;
 }

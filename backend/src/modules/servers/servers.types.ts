@@ -21,3 +21,15 @@ export interface ServerMetricsQuery {
   to?: string;
   limit?: number;
 }
+
+export interface UpdateServerSettingsInput {
+  cpu_threshold?: number | null;
+  memory_threshold?: number | null;
+  disk_threshold?: number | null;
+  load_threshold?: number | null;
+  alert_cooldown_minutes?: number | null;
+  alerts_enabled?: boolean;
+  notify_email?: boolean | null;
+  notify_webhook?: boolean | null;
+  notification_emails?: string[] | null;
+}

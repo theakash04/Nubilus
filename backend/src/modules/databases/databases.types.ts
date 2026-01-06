@@ -22,3 +22,10 @@ export interface DatabaseMetricsQuery {
   to?: string;
   limit?: number;
 }
+
+export interface UpdateDatabaseSettingsInput {
+  alerts_enabled?: boolean;
+  alert_on_down?: boolean;
+  consecutive_failures_before_alert?: number;
+  alert_cooldown_minutes?: number | null;
+}

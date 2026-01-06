@@ -1,5 +1,10 @@
 import type { ApiResponse } from "../types/auth.types";
-import type { Endpoint, EndpointCheck } from "../types/monitoring.types";
+import type {
+  Endpoint,
+  EndpointCheck,
+  EndpointSettings,
+  UpdateEndpointSettingsInput,
+} from "../types/monitoring.types";
 import api from "./AxiosInstance";
 
 export async function listEndpoints(orgId: string) {
@@ -44,6 +49,25 @@ export async function createEndpoint(orgId: string, data: CreateEndpointData) {
 export async function deleteEndpoint(orgId: string, endpointId: string) {
   const res = await api.delete<ApiResponse>(
     `/org/${orgId}/endpoints/${endpointId}`
+  );
+  return res.data;
+}
+
+export async function getEndpointSettings(orgId: string, endpointId: string) {
+  const res = await api.get<ApiResponse<EndpointSettings>>(
+    `/org/${orgId}/endpoints/${endpointId}/settings`
+  );
+  return res.data;
+}
+
+export async function updateEndpointSettings(
+  orgId: string,
+  endpointId: string,
+  data: UpdateEndpointSettingsInput
+) {
+  const res = await api.put<ApiResponse<EndpointSettings>>(
+    `/org/${orgId}/endpoints/${endpointId}/settings`,
+    data
   );
   return res.data;
 }

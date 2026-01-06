@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
-import { useServerMetrics } from "@/hooks/useServers";
 import { Card } from "@/components/ui/Card";
+import { useServerMetrics } from "@/hooks/useServers";
+import { ChevronDown, Clock, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -8,9 +9,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  ReferenceLine,
 } from "recharts";
-import { ChevronDown, Loader2, Clock, AlertTriangle } from "lucide-react";
 
 interface ServerMetricsChartProps {
   orgId: string;
@@ -24,7 +23,6 @@ const METRIC_CONFIG = {
     color: "#8b5cf6",
     unit: "%",
     maxValue: 100,
-    spikeThreshold: 80,
   },
   memory: {
     key: "memory",
@@ -32,7 +30,6 @@ const METRIC_CONFIG = {
     color: "#3b82f6",
     unit: "%",
     maxValue: 100,
-    spikeThreshold: 85,
   },
   disk: {
     key: "disk",
@@ -40,7 +37,6 @@ const METRIC_CONFIG = {
     color: "#10b981",
     unit: "%",
     maxValue: 100,
-    spikeThreshold: 90,
   },
   load1m: {
     key: "load1m",
@@ -48,7 +44,6 @@ const METRIC_CONFIG = {
     color: "#f59e0b",
     unit: "",
     maxValue: null,
-    spikeThreshold: null,
   },
   load5m: {
     key: "load5m",
@@ -56,7 +51,6 @@ const METRIC_CONFIG = {
     color: "#ef4444",
     unit: "",
     maxValue: null,
-    spikeThreshold: null,
   },
   networkIn: {
     key: "networkIn",
@@ -64,7 +58,6 @@ const METRIC_CONFIG = {
     color: "#06b6d4",
     unit: " MB",
     maxValue: null,
-    spikeThreshold: null,
   },
   networkOut: {
     key: "networkOut",
@@ -72,7 +65,6 @@ const METRIC_CONFIG = {
     color: "#ec4899",
     unit: " MB",
     maxValue: null,
-    spikeThreshold: null,
   },
   diskRead: {
     key: "diskRead",
@@ -80,7 +72,6 @@ const METRIC_CONFIG = {
     color: "#14b8a6",
     unit: " MB",
     maxValue: null,
-    spikeThreshold: null,
   },
   diskWrite: {
     key: "diskWrite",
@@ -88,7 +79,6 @@ const METRIC_CONFIG = {
     color: "#f97316",
     unit: " MB",
     maxValue: null,
-    spikeThreshold: null,
   },
 } as const;
 
@@ -102,13 +92,6 @@ const TIME_RANGES = {
 } as const;
 
 type TimeRangeKey = keyof typeof TIME_RANGES;
-
-interface Spike {
-  time: string;
-  metric: MetricKey;
-  value: number;
-  threshold: number;
-}
 
 export function ServerMetricsChart({
   orgId,
@@ -155,10 +138,9 @@ export function ServerMetricsChart({
   };
 
   // Transform metrics data and detect spikes
-  const { chartData, spikes } = useMemo(() => {
+  const { chartData } = useMemo(() => {
     const metrics = metricsData?.data?.metrics || [];
     const range = TIME_RANGES[selectedTimeRange];
-    const detectedSpikes: Spike[] = [];
 
     const formatTime = (date: Date) => {
       if (range.hours <= 24) {
@@ -358,32 +340,6 @@ export function ServerMetricsChart({
         const diskVal =
           bucket.count > 0 ? Math.round(bucket.disk / bucket.count) : 0;
 
-        // Detect spikes based on max values in each bucket
-        if (bucket.cpuMax >= METRIC_CONFIG.cpu.spikeThreshold!) {
-          detectedSpikes.push({
-            time: bucket.fullTime,
-            metric: "cpu",
-            value: Math.round(bucket.cpuMax),
-            threshold: METRIC_CONFIG.cpu.spikeThreshold!,
-          });
-        }
-        if (bucket.memoryMax >= METRIC_CONFIG.memory.spikeThreshold!) {
-          detectedSpikes.push({
-            time: bucket.fullTime,
-            metric: "memory",
-            value: Math.round(bucket.memoryMax),
-            threshold: METRIC_CONFIG.memory.spikeThreshold!,
-          });
-        }
-        if (bucket.diskMax >= METRIC_CONFIG.disk.spikeThreshold!) {
-          detectedSpikes.push({
-            time: bucket.fullTime,
-            metric: "disk",
-            value: Math.round(bucket.diskMax),
-            threshold: METRIC_CONFIG.disk.spikeThreshold!,
-          });
-        }
-
         return {
           time: bucket.time,
           fullTime: bucket.fullTime,
@@ -405,7 +361,7 @@ export function ServerMetricsChart({
         };
       });
 
-    return { chartData: data, spikes: detectedSpikes };
+    return { chartData: data };
   }, [metricsData, selectedTimeRange]);
 
   const yAxisDomain = useMemo(() => {
@@ -531,29 +487,6 @@ export function ServerMetricsChart({
           ))}
       </div>
 
-      {/* Spikes Alert */}
-      {spikes.length > 0 && (
-        <div className="mb-4 p-3 bg-warning/10 border border-warning/20 rounded-lg">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-warning">
-                {spikes.length} spike{spikes.length > 1 ? "s" : ""} detected
-              </p>
-              <ul className="mt-1 text-xs text-warning/90 space-y-0.5">
-                {spikes.slice(0, 5).map((spike, i) => (
-                  <li key={i}>
-                    {METRIC_CONFIG[spike.metric].label} reached {spike.value}
-                    {METRIC_CONFIG[spike.metric].unit} at {spike.time}
-                  </li>
-                ))}
-                {spikes.length > 5 && <li>...and {spikes.length - 5} more</li>}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Chart */}
       <div className="h-64 md:h-80 w-full">
         {isLoading ? (
@@ -617,23 +550,6 @@ export function ServerMetricsChart({
                     : `${value}`;
                 }}
               />
-              {/* Threshold lines for spike detection */}
-              {enabledMetrics.has("cpu") && (
-                <ReferenceLine
-                  y={METRIC_CONFIG.cpu.spikeThreshold}
-                  stroke="#8b5cf6"
-                  strokeDasharray="3 3"
-                  strokeOpacity={0.5}
-                />
-              )}
-              {enabledMetrics.has("memory") && (
-                <ReferenceLine
-                  y={METRIC_CONFIG.memory.spikeThreshold}
-                  stroke="#3b82f6"
-                  strokeDasharray="3 3"
-                  strokeOpacity={0.5}
-                />
-              )}
               <Tooltip
                 contentStyle={{
                   borderRadius: "8px",

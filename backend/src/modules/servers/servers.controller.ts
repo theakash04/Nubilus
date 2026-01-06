@@ -8,7 +8,8 @@ import {
   getServersByOrgId,
   updateServer,
 } from "../../db/queries/servers";
-import { ServerMetricsQuery, UpdateServerInput } from "./servers.types";
+import { getServerSettings, updateServerSettings } from "../../db/queries/settings";
+import { ServerMetricsQuery, UpdateServerInput, UpdateServerSettingsInput } from "./servers.types";
 
 export async function listServers(req: Request, res: Response) {
   const userId = req.user?.userId;
@@ -89,4 +90,38 @@ export async function getServerMetricsHandler(req: Request, res: Response) {
 
   const metrics = await getServerMetrics(serverId, fromDate, toDate, limitNum);
   sendResponse(res, 200, "Metrics retrieved", { metrics });
+}
+
+export async function getServerSettingsHandler(req: Request, res: Response) {
+  const userId = req.user?.userId;
+  const { orgId, serverId } = req.params;
+
+  if (!userId) throw new AppError("Unauthorized", 401);
+
+  const hasAccess = await userHasOrgPermission(userId, orgId, "write");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  const server = await getServerById(serverId, orgId);
+  if (!server) throw new AppError("Server not found", 404);
+
+  const settings = await getServerSettings(serverId);
+  sendResponse(res, 200, "Server settings retrieved", settings);
+}
+
+export async function updateServerSettingsHandler(req: Request, res: Response) {
+  const userId = req.user?.userId;
+  const { orgId, serverId } = req.params;
+
+  if (!userId) throw new AppError("Unauthorized", 401);
+
+  const hasAccess = await userHasOrgPermission(userId, orgId, "write");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  const server = await getServerById(serverId, orgId);
+  if (!server) throw new AppError("Server not found", 404);
+
+  const updates = req.body as UpdateServerSettingsInput;
+  const settings = await updateServerSettings(serverId, updates);
+
+  sendResponse(res, 200, "Server settings updated", settings);
 }

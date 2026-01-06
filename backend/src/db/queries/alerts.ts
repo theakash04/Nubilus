@@ -98,31 +98,35 @@ export async function deleteAlertRule(id: string, orgId: string): Promise<boolea
 export async function getAlertsByOrgId(
   orgId: string,
   filters: { status?: AlertStatus; severity?: AlertSeverity; limit?: number }
-): Promise<Alert[]> {
+): Promise<Omit<Alert, "alert_rule_id">[]> {
   const limit = filters.limit ?? 100;
 
-  let query = sql<Alert[]>`
-    SELECT * FROM alerts 
+  let query = sql<Omit<Alert, "alert_rule_id">[]>`
+    SELECT id, org_id, severity, title, message, status, fired_at, acknowledged_at, resolved_at, target_type, target_id, metric_value
+    FROM alerts 
     WHERE org_id = ${orgId}::uuid
   `;
 
   if (filters.status) {
-    query = sql<Alert[]>`
-      SELECT * FROM alerts 
+    query = sql<Omit<Alert, "alert_rule_id">[]>`
+      SELECT id, org_id, severity, title, message, status, fired_at, acknowledged_at, resolved_at, target_type, target_id, metric_value
+      FROM alerts 
       WHERE org_id = ${orgId}::uuid AND status = ${filters.status}
       ORDER BY fired_at DESC
       LIMIT ${limit}
     `;
   } else if (filters.severity) {
-    query = sql<Alert[]>`
-      SELECT * FROM alerts 
+    query = sql<Omit<Alert, "alert_rule_id">[]>`
+      SELECT id, org_id, severity, title, message, status, fired_at, acknowledged_at, resolved_at, target_type, target_id, metric_value
+      FROM alerts 
       WHERE org_id = ${orgId}::uuid AND severity = ${filters.severity}
       ORDER BY fired_at DESC
       LIMIT ${limit}
     `;
   } else {
-    query = sql<Alert[]>`
-      SELECT * FROM alerts 
+    query = sql<Omit<Alert, "alert_rule_id">[]>`
+      SELECT id, org_id, severity, title, message, status, fired_at, acknowledged_at, resolved_at, target_type, target_id, metric_value
+      FROM alerts 
       WHERE org_id = ${orgId}::uuid
       ORDER BY fired_at DESC
       LIMIT ${limit}

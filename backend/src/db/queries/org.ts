@@ -319,6 +319,13 @@ export interface OrgSettings {
   webhook_url: string | null;
   webhook_secret: string | null;
   webhook_enabled: boolean;
+  // Alert threshold defaults
+  default_cpu_threshold: number;
+  default_memory_threshold: number;
+  default_disk_threshold: number;
+  default_load_threshold: number;
+  default_alert_cooldown_minutes: number;
+  server_offline_threshold_seconds: number;
   created_at: string;
   updated_at: string;
 }
@@ -344,6 +351,12 @@ export async function updateOrgSettings({
   webhook_url,
   webhook_secret,
   webhook_enabled,
+  default_cpu_threshold,
+  default_memory_threshold,
+  default_disk_threshold,
+  default_load_threshold,
+  default_alert_cooldown_minutes,
+  server_offline_threshold_seconds,
 }: {
   orgId: string;
   invite_expiry_hours?: number;
@@ -356,6 +369,13 @@ export async function updateOrgSettings({
   webhook_url?: string | null;
   webhook_secret?: string | null;
   webhook_enabled?: boolean;
+  // Alert threshold defaults
+  default_cpu_threshold?: number;
+  default_memory_threshold?: number;
+  default_disk_threshold?: number;
+  default_load_threshold?: number;
+  default_alert_cooldown_minutes?: number;
+  server_offline_threshold_seconds?: number;
 }) {
   await sql`
     UPDATE org_settings
@@ -375,7 +395,19 @@ export async function updateOrgSettings({
       notification_emails = COALESCE(${notification_emails ?? null}, notification_emails),
       webhook_url = COALESCE(${webhook_url ?? null}, webhook_url),
       webhook_secret = COALESCE(${webhook_secret ?? null}, webhook_secret),
-      webhook_enabled = COALESCE(${webhook_enabled ?? null}, webhook_enabled)
+      webhook_enabled = COALESCE(${webhook_enabled ?? null}, webhook_enabled),
+      default_cpu_threshold = COALESCE(${default_cpu_threshold ?? null}, default_cpu_threshold),
+      default_memory_threshold = COALESCE(${
+        default_memory_threshold ?? null
+      }, default_memory_threshold),
+      default_disk_threshold = COALESCE(${default_disk_threshold ?? null}, default_disk_threshold),
+      default_load_threshold = COALESCE(${default_load_threshold ?? null}, default_load_threshold),
+      default_alert_cooldown_minutes = COALESCE(${
+        default_alert_cooldown_minutes ?? null
+      }, default_alert_cooldown_minutes),
+      server_offline_threshold_seconds = COALESCE(${
+        server_offline_threshold_seconds ?? null
+      }, server_offline_threshold_seconds)
     WHERE org_id = ${orgId}::uuid
   `;
 }

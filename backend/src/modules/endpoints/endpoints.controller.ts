@@ -9,7 +9,13 @@ import {
   getHealthChecks,
   updateEndpoint,
 } from "../../db/queries/endpoints";
-import { CreateEndpointInput, HealthCheckQuery, UpdateEndpointInput } from "./endpoints.types";
+import { getEndpointSettings, updateEndpointSettings } from "../../db/queries/settings";
+import {
+  CreateEndpointInput,
+  HealthCheckQuery,
+  UpdateEndpointInput,
+  UpdateEndpointSettingsInput,
+} from "./endpoints.types";
 
 export async function listEndpoints(req: Request, res: Response) {
   const userId = req.user?.userId;
@@ -107,4 +113,38 @@ export async function getEndpointChecks(req: Request, res: Response) {
 
   const checks = await getHealthChecks(endpointId, fromDate, toDate, limitNum);
   sendResponse(res, 200, "Health checks retrieved", { checks });
+}
+
+export async function getEndpointSettingsHandler(req: Request, res: Response) {
+  const userId = req.user?.userId;
+  const { orgId, endpointId } = req.params;
+
+  if (!userId) throw new AppError("Unauthorized", 401);
+
+  const hasAccess = await userHasOrgPermission(userId, orgId, "write");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  const endpoint = await getEndpointById(endpointId, orgId);
+  if (!endpoint) throw new AppError("Endpoint not found", 404);
+
+  const settings = await getEndpointSettings(endpointId);
+  sendResponse(res, 200, "Endpoint settings retrieved", settings);
+}
+
+export async function updateEndpointSettingsHandler(req: Request, res: Response) {
+  const userId = req.user?.userId;
+  const { orgId, endpointId } = req.params;
+
+  if (!userId) throw new AppError("Unauthorized", 401);
+
+  const hasAccess = await userHasOrgPermission(userId, orgId, "write");
+  if (!hasAccess) throw new AppError("Access denied", 403);
+
+  const endpoint = await getEndpointById(endpointId, orgId);
+  if (!endpoint) throw new AppError("Endpoint not found", 404);
+
+  const updates = req.body as UpdateEndpointSettingsInput;
+  const settings = await updateEndpointSettings(endpointId, updates);
+
+  sendResponse(res, 200, "Endpoint settings updated", settings);
 }
