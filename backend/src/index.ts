@@ -43,6 +43,6 @@ app.use(errorHandler);
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
 
-  // Initialize queue workers
-  initializeWorkers();
+  // Initialize queue workers (including monitoring schedules)
+  await initializeWorkers();
 });

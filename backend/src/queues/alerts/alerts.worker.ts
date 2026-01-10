@@ -4,6 +4,26 @@ import { AlertNotificationJobData, ALERTS_QUEUE_NAME } from "./alerts.queue";
 import { addEmailJob } from "../email";
 import { getOrgSettings } from "../../db/queries/org";
 import { getOrgAdminEmails } from "../../db/queries/org";
+import IORedis from "ioredis";
+
+const ALERT_COOLDOWN_SECONDS = 4000;
+
+const redis = new IORedis({
+  host: process.env.REDIS_HOST || "localhost",
+  port: parseInt(process.env.REDIS_PORT || "6379"),
+  password: process.env.REDIS_PASSWORD,
+});
+
+async function isInCooldown(orgId: string, title: string): Promise<boolean> {
+  const cooldownKey = `alert_cooldown:${orgId}:${title.replace(/\s+/g, "_")}`;
+  const exists = await redis.get(cooldownKey);
+  return exists !== null;
+}
+
+async function setCooldown(orgId: string, title: string): Promise<void> {
+  const cooldownKey = `alert_cooldown:${orgId}:${title.replace(/\s+/g, "_")}`;
+  await redis.set(cooldownKey, "1", "EX", ALERT_COOLDOWN_SECONDS);
+}
 
 export const alertsWorker = new Worker<AlertNotificationJobData>(
   ALERTS_QUEUE_NAME,
@@ -12,6 +32,13 @@ export const alertsWorker = new Worker<AlertNotificationJobData>(
 
     console.log(`Processing ${type} notification for org ${orgId}`);
 
+    // Check cooldown to prevent email spam
+    const inCooldown = await isInCooldown(orgId, title);
+    if (inCooldown) {
+      console.log(`[Cooldown] Skipping alert "${title}" for org ${orgId} - still in cooldown`);
+      return { skipped: true, reason: "cooldown" };
+    }
+
     // Check org settings before sending
     const settings = await getOrgSettings(orgId);
     if (!settings) {
@@ -19,7 +46,6 @@ export const alertsWorker = new Worker<AlertNotificationJobData>(
       return;
     }
 
-    // Check if this notification type is enabled
     if (type === "alert_triggered" && !settings.notify_on_alert_triggered) {
       console.log(`Alert notifications disabled for org ${orgId}`);
       return;
@@ -44,6 +70,9 @@ export const alertsWorker = new Worker<AlertNotificationJobData>(
       return;
     }
 
+    // Set cooldown BEFORE sending to prevent concurrent spam
+    await setCooldown(orgId, title);
+
     // Queue email notifications
     for (const email of emailsToNotify) {
       await addEmailJob({
@@ -55,6 +84,10 @@ export const alertsWorker = new Worker<AlertNotificationJobData>(
           <hr>
           <p style="color: #666; font-size: 12px;">
             You received this because you're subscribed to alert notifications for this organization.
+            <br>
+            <em>Next alert for this target will be sent after ${
+              ALERT_COOLDOWN_SECONDS / 60
+            } minutes cooldown.</em>
           </p>
         `,
       });

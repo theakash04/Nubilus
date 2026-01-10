@@ -23,6 +23,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.1",
     "@types/nodemailer": "^7.0.4",
+    "@types/pg": "^8.16.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
@@ -35,8 +36,11 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.0.0",
+    "mysql2": "^3.16.0",
     "nodemailer": "^7.0.12",
     "nodemon": "^3.1.11",
+    "pg": "^8.16.3",
     "postgres": "^3.4.7",
     "uuid": "^13.0.0"
   }

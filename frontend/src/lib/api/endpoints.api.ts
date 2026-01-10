@@ -53,6 +53,28 @@ export async function deleteEndpoint(orgId: string, endpointId: string) {
   return res.data;
 }
 
+interface UpdateEndpointData {
+  name?: string;
+  url?: string;
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
+  expected_status_code?: number;
+  check_interval?: number;
+  timeout?: number;
+  enabled?: boolean;
+}
+
+export async function updateEndpoint(
+  orgId: string,
+  endpointId: string,
+  data: UpdateEndpointData
+) {
+  const res = await api.put<ApiResponse<Endpoint>>(
+    `/org/${orgId}/endpoints/${endpointId}`,
+    data
+  );
+  return res.data;
+}
+
 export async function getEndpointSettings(orgId: string, endpointId: string) {
   const res = await api.get<ApiResponse<EndpointSettings>>(
     `/org/${orgId}/endpoints/${endpointId}/settings`

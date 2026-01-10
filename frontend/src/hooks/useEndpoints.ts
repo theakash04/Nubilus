@@ -5,6 +5,7 @@ import {
   getEndpointChecks,
   createEndpoint,
   deleteEndpoint,
+  updateEndpoint,
   getEndpointSettings,
   updateEndpointSettings,
 } from "@/lib/api/endpoints.api";
@@ -57,6 +58,26 @@ export function useDeleteEndpoint(orgId: string) {
     mutationFn: (endpointId: string) => deleteEndpoint(orgId, endpointId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["org", orgId, "endpoints"] });
+    },
+  });
+}
+
+export function useUpdateEndpoint(orgId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      endpointId,
+      data,
+    }: {
+      endpointId: string;
+      data: Parameters<typeof updateEndpoint>[2];
+    }) => updateEndpoint(orgId, endpointId, data),
+    onSuccess: (_, { endpointId }) => {
+      queryClient.invalidateQueries({ queryKey: ["org", orgId, "endpoints"] });
+      queryClient.invalidateQueries({
+        queryKey: ["org", orgId, "endpoints", endpointId],
+      });
     },
   });
 }

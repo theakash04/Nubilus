@@ -16,6 +16,11 @@ import {
   UpdateEndpointInput,
   UpdateEndpointSettingsInput,
 } from "./endpoints.types";
+import {
+  scheduleEndpointMonitoring,
+  removeEndpointMonitoring,
+  updateEndpointMonitoring,
+} from "../../queues";
 
 export async function listEndpoints(req: Request, res: Response) {
   const userId = req.user?.userId;
@@ -60,6 +65,10 @@ export async function createEndpointHandler(req: Request, res: Response) {
   }
 
   const endpoint = await createEndpoint(orgId, data);
+
+  // Schedule monitoring for the new endpoint
+  await scheduleEndpointMonitoring(endpoint);
+
   sendResponse(res, 201, "Endpoint created", endpoint);
 }
 
@@ -76,6 +85,12 @@ export async function updateEndpointHandler(req: Request, res: Response) {
   const endpoint = await updateEndpoint(endpointId, orgId, updates);
 
   if (!endpoint) throw new AppError("Endpoint not found", 404);
+
+  // Update monitoring schedule if interval or enabled status changed
+  if (updates.check_interval !== undefined || updates.enabled !== undefined) {
+    await updateEndpointMonitoring(endpoint);
+  }
+
   sendResponse(res, 200, "Endpoint updated", endpoint);
 }
 
@@ -87,6 +102,9 @@ export async function deleteEndpointHandler(req: Request, res: Response) {
 
   const hasAccess = await userHasOrgPermission(userId, orgId, "manage");
   if (!hasAccess) throw new AppError("Access denied", 403);
+
+  // Remove from monitoring before deleting
+  await removeEndpointMonitoring(endpointId);
 
   const deleted = await deleteEndpoint(endpointId, orgId);
   if (!deleted) throw new AppError("Endpoint not found", 404);

@@ -38,8 +38,8 @@ export function getSystemStatus(
   const healthyEndpoints = endpoints.filter(
     (e) => e.status === "healthy"
   ).length;
-  const connectedDatabases = databases.filter(
-    (d) => d.status === "connected"
+  const healthyDatabases = databases.filter(
+    (d) => d.is_healthy === true
   ).length;
 
   if (activeAlertsCount > 5 || (servers.length > 0 && onlineServers === 0)) {
@@ -50,7 +50,7 @@ export function getSystemStatus(
     activeAlertsCount > 0 ||
     (servers.length > 0 && onlineServers < servers.length) ||
     (endpoints.length > 0 && healthyEndpoints < endpoints.length) ||
-    (databases.length > 0 && connectedDatabases < databases.length)
+    (databases.length > 0 && healthyDatabases < databases.length)
   ) {
     return "degraded";
   }
@@ -96,8 +96,7 @@ export function useDashboardStats(
     healthyEndpoints: endpoints.filter((e) => e.status === "healthy").length,
     totalEndpoints: endpoints.length,
     databaseTargets: databases.length,
-    connectedDatabases: databases.filter((d) => d.status === "connected")
-      .length,
+    connectedDatabases: databases.filter((d) => d.is_healthy === true).length,
     activeAlerts: activeAlerts.length,
     totalAlerts: alerts.length,
   };

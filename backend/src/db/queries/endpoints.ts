@@ -2,16 +2,57 @@ import sql from "..";
 import { Endpoint, HealthCheck } from "../../types/database";
 import { HttpMethod } from "../../types/enums";
 
-export async function getEndpointsByOrgId(orgId: string): Promise<Endpoint[]> {
-  const endpoints = await sql<Endpoint[]>`
-    SELECT * FROM endpoints WHERE org_id = ${orgId}::uuid ORDER BY created_at DESC
+export async function getEndpointsByOrgId(
+  orgId: string
+): Promise<(Endpoint & { status: string })[]> {
+  // Include computed status from latest health check
+  const endpoints = await sql<(Endpoint & { status: string })[]>`
+    SELECT 
+      e.*,
+      COALESCE(
+        CASE 
+          WHEN hc.is_up = true THEN 'healthy'
+          WHEN hc.is_up = false THEN 'unhealthy'
+          ELSE 'pending'
+        END,
+        'pending'
+      ) as status
+    FROM endpoints e
+    LEFT JOIN LATERAL (
+      SELECT is_up FROM health_checks 
+      WHERE endpoint_id = e.id 
+      ORDER BY time DESC 
+      LIMIT 1
+    ) hc ON true
+    WHERE e.org_id = ${orgId}::uuid 
+    ORDER BY e.created_at DESC
   `;
   return endpoints;
 }
 
-export async function getEndpointById(id: string, orgId: string): Promise<Endpoint | null> {
-  const [endpoint] = await sql<Endpoint[]>`
-    SELECT * FROM endpoints WHERE id = ${id}::uuid AND org_id = ${orgId}::uuid
+export async function getEndpointById(
+  id: string,
+  orgId: string
+): Promise<(Endpoint & { status: string }) | null> {
+  const [endpoint] = await sql<(Endpoint & { status: string })[]>`
+    SELECT 
+      e.*,
+      COALESCE(
+        CASE 
+          WHEN hc.is_up = true THEN 'healthy'
+          WHEN hc.is_up = false THEN 'unhealthy'
+          ELSE 'pending'
+        END,
+        'pending'
+      ) as status
+    FROM endpoints e
+    LEFT JOIN LATERAL (
+      SELECT is_up FROM health_checks 
+      WHERE endpoint_id = e.id 
+      ORDER BY time DESC 
+      LIMIT 1
+    ) hc ON true
+    WHERE e.id = ${id}::uuid AND e.org_id = ${orgId}::uuid
   `;
   return endpoint ?? null;
 }
@@ -122,6 +163,13 @@ export async function insertHealthCheck(data: {
   await sql`
     UPDATE endpoints SET last_checked_at = NOW() WHERE id = ${data.endpoint_id}::uuid
   `;
+}
+
+export async function getAllEnabledEndpoints(): Promise<Endpoint[]> {
+  const endpoints = await sql<Endpoint[]>`
+    SELECT * FROM endpoints WHERE enabled = true
+  `;
+  return endpoints;
 }
 
 export async function endpointTrends(orgId: string): Promise<{ hour: Date; count: string }[]> {

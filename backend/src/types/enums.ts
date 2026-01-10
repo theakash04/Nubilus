@@ -22,9 +22,9 @@ export enum HttpMethod {
 }
 
 export enum DatabaseType {
-  POSTGRES = "postgres",
+  POSTGRESQL = "postgresql",
   MYSQL = "mysql",
-  MONGODB = "mongo",
+  MONGODB = "mongodb",
   REDIS = "redis",
   MARIADB = "mariadb",
 }

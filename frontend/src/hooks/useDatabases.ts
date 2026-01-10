@@ -5,6 +5,7 @@ import {
   getDatabaseMetrics,
   createDatabase,
   deleteDatabase,
+  updateDatabase,
   getDatabaseSettings,
   updateDatabaseSettings,
 } from "@/lib/api/databases.api";
@@ -57,6 +58,26 @@ export function useDeleteDatabase(orgId: string) {
     mutationFn: (dbId: string) => deleteDatabase(orgId, dbId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["org", orgId, "databases"] });
+    },
+  });
+}
+
+export function useUpdateDatabase(orgId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      dbId,
+      data,
+    }: {
+      dbId: string;
+      data: Parameters<typeof updateDatabase>[2];
+    }) => updateDatabase(orgId, dbId, data),
+    onSuccess: (_, { dbId }) => {
+      queryClient.invalidateQueries({ queryKey: ["org", orgId, "databases"] });
+      queryClient.invalidateQueries({
+        queryKey: ["org", orgId, "databases", dbId],
+      });
     },
   });
 }

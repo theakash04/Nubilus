@@ -39,43 +39,43 @@ export interface ServerMetric {
 // Endpoint types
 export interface Endpoint {
   id: string;
-  orgId: string;
+  org_id: string;
+  server_id: string | null;
   name: string;
   url: string;
   method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
-  expected_status: number;
+  expected_status_code: number;
   check_interval: number;
   timeout: number;
   status: "healthy" | "unhealthy" | "pending";
   last_checked_at: string | null;
   tags: string[];
   created_at: string;
-  updated_at: string;
 }
 
 export interface EndpointCheck {
-  id: string;
+  time: string; // Backend uses 'time' field from TimescaleDB
   endpoint_id: string;
-  status: "success" | "failure";
-  response_time: number;
   status_code: number | null;
+  response_time: number | null;
+  is_up: boolean | null;
   error_message: string | null;
-  checked_at: string;
+  checked_from: string | null;
 }
 
 // Database types
 export interface DatabaseTarget {
   id: string;
   org_id: string;
+  server_id: string | null;
   name: string;
-  type: "postgresql" | "mysql" | "mongodb" | "redis";
-  host: string;
-  port: number;
-  status: "connected" | "disconnected" | "error";
+  db_type: "postgresql" | "mysql" | "mongodb" | "redis";
+  is_healthy: boolean | null;
+  check_interval: number;
+  timeout: number;
+  enabled: boolean;
   last_checked_at: string | null;
-  tags: string[];
   created_at: string;
-  updated_at: string;
 }
 
 export interface DatabaseMetric {
@@ -85,7 +85,17 @@ export interface DatabaseMetric {
   query_time: number;
   cache_hit_ratio: number | null;
   replication_lag: number | null;
-  timestamp: string;
+  time: string;
+  target_id: string;
+  active_connections: number | null;
+  idle_connections: number | null;
+  queries_per_second: number | null;
+  slow_queries: number | null;
+  avg_query_time_ms: number | null;
+  db_size_bytes: number | null;
+  table_count: number | null;
+  is_healthy: boolean | null;
+  error_message: string | null;
 }
 
 // Alert types

@@ -16,6 +16,11 @@ import {
   UpdateDatabaseSettingsInput,
   UpdateDatabaseTargetInput,
 } from "./databases.types";
+import {
+  scheduleDatabaseMonitoring,
+  removeDatabaseMonitoring,
+  updateDatabaseMonitoring,
+} from "../../queues";
 
 export async function listDatabaseTargets(req: Request, res: Response) {
   const userId = req.user?.userId;
@@ -60,6 +65,10 @@ export async function createDatabaseTargetHandler(req: Request, res: Response) {
   }
 
   const database = await createDatabaseTarget(orgId, data);
+
+  // Schedule monitoring for the new database
+  await scheduleDatabaseMonitoring(database);
+
   sendResponse(res, 201, "Database target created", database);
 }
 
@@ -76,6 +85,12 @@ export async function updateDatabaseTargetHandler(req: Request, res: Response) {
   const database = await updateDatabaseTarget(dbId, orgId, updates);
 
   if (!database) throw new AppError("Database target not found", 404);
+
+  // Update monitoring schedule if interval or enabled status changed
+  if (updates.check_interval !== undefined || updates.enabled !== undefined) {
+    await updateDatabaseMonitoring(database);
+  }
+
   sendResponse(res, 200, "Database target updated", database);
 }
 
@@ -87,6 +102,9 @@ export async function deleteDatabaseTargetHandler(req: Request, res: Response) {
 
   const hasAccess = await userHasOrgPermission(userId, orgId, "manage");
   if (!hasAccess) throw new AppError("Access denied", 403);
+
+  // Remove from monitoring before deleting
+  await removeDatabaseMonitoring(dbId);
 
   const deleted = await deleteDatabaseTarget(dbId, orgId);
   if (!deleted) throw new AppError("Database target not found", 404);
