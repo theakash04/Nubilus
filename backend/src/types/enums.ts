@@ -27,6 +27,7 @@ export enum DatabaseType {
   MONGODB = "mongodb",
   REDIS = "redis",
   MARIADB = "mariadb",
+  MSSQL = "mssql",
 }
 
 export enum ServiceType {

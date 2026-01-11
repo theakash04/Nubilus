@@ -25,6 +25,7 @@ const dbTypeIcons: Record<string, string> = {
   mysql: "🐬",
   mongodb: "🍃",
   redis: "🔴",
+  mssql: "🔷",
 };
 
 const dbTypeLabels: Record<string, string> = {
@@ -32,8 +33,8 @@ const dbTypeLabels: Record<string, string> = {
   mysql: "MySQL",
   mongodb: "MongoDB",
   redis: "Redis",
+  mssql: "SQL Server",
 };
-
 
 function RouteComponent() {
   const { orgId } = Route.useParams();
@@ -47,7 +48,12 @@ function RouteComponent() {
   // Form state
   const [formData, setFormData] = useState({
     name: "",
-    type: "postgresql" as "postgresql" | "mysql" | "mongodb" | "redis",
+    type: "postgresql" as
+      | "postgresql"
+      | "mysql"
+      | "mongodb"
+      | "redis"
+      | "mssql",
     connectionUrl: "",
   });
 
@@ -59,6 +65,7 @@ function RouteComponent() {
     mysql: "mysql://user:password@host:3306/dbname",
     mongodb: "mongodb+srv://user:password@cluster.mongodb.net/dbname",
     redis: "redis://:password@host:6379",
+    mssql: "mssql://user:password@host:1433/dbname",
   };
 
   const handleCreate = async () => {
@@ -87,7 +94,7 @@ function RouteComponent() {
   };
 
   const handleTypeChange = (
-    type: "postgresql" | "mysql" | "mongodb" | "redis"
+    type: "postgresql" | "mysql" | "mongodb" | "redis" | "mssql"
   ) => {
     setFormData({ ...formData, type });
   };
@@ -247,7 +254,12 @@ function RouteComponent() {
               value={formData.type}
               onChange={(e) =>
                 handleTypeChange(
-                  e.target.value as "postgresql" | "mysql" | "mongodb" | "redis"
+                  e.target.value as
+                    | "postgresql"
+                    | "mysql"
+                    | "mongodb"
+                    | "redis"
+                    | "mssql"
                 )
               }
               options={[
@@ -255,6 +267,7 @@ function RouteComponent() {
                 { value: "mysql", label: "MySQL" },
                 { value: "mongodb", label: "MongoDB" },
                 { value: "redis", label: "Redis" },
+                { value: "mssql", label: "MSSQL Server" },
               ]}
             />
           </div>

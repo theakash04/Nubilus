@@ -30,7 +30,7 @@ export async function getDatabaseMetrics(orgId: string, dbId: string) {
 
 interface CreateDatabaseData {
   name: string;
-  type: "postgresql" | "mysql" | "mongodb" | "redis";
+  type: "postgresql" | "mysql" | "mongodb" | "redis" | "mssql";
   connectionUrl: string;
   checkInterval?: number;
   timeout?: number;

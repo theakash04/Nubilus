@@ -10,6 +10,7 @@ import { insertHealthCheck } from "../../db/queries/endpoints";
 import { insertDatabaseMetric } from "../../db/queries/databases";
 import { addAlertNotification } from "../alerts/alerts.queue";
 import { DatabaseType } from "../../types/enums";
+import type { config as MssqlConfig } from "mssql";
 
 /**
  * Check an HTTP endpoint
@@ -114,6 +115,10 @@ async function checkDatabase(data: DatabaseJobData): Promise<DatabaseMetricsResu
 
       case DatabaseType.REDIS:
         result = await checkRedis(data.connectionUrl, data.timeout);
+        break;
+
+      case DatabaseType.MSSQL:
+        result = await checkMssql(data.connectionUrl, data.timeout);
         break;
 
       default:
@@ -471,6 +476,171 @@ async function checkRedis(
   return result;
 }
 
+/**
+ * Parse MSSQL connection URL into config object
+ * Supports formats:
+ * - mssql://user:password@host:port/database
+ * - Server=host,port;Database=db;User Id=user;Password=pass;
+ */
+function parseMssqlConnectionUrl(connectionUrl: string): {
+  server: string;
+  port?: number;
+  database: string;
+  user: string;
+  password: string;
+} {
+  // Try URL format first (mssql://user:pass@host:port/database)
+  if (connectionUrl.startsWith("mssql://") || connectionUrl.startsWith("sqlserver://")) {
+    const url = new URL(connectionUrl);
+    return {
+      server: url.hostname,
+      port: url.port ? parseInt(url.port) : 1433,
+      database: url.pathname.slice(1) || "master",
+      user: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+    };
+  }
+
+  // Try ADO.NET connection string format
+  const parts: Record<string, string> = {};
+  connectionUrl.split(";").forEach(part => {
+    const [key, ...valueParts] = part.split("=");
+    if (key && valueParts.length > 0) {
+      parts[key.trim().toLowerCase()] = valueParts.join("=").trim();
+    }
+  });
+
+  // Parse server and port (can be "host,port" or "host")
+  let server = parts["server"] || parts["data source"] || "localhost";
+  let port = 1433;
+  if (server.includes(",")) {
+    const [host, portStr] = server.split(",");
+    server = host;
+    port = parseInt(portStr) || 1433;
+  }
+
+  return {
+    server,
+    port,
+    database: parts["database"] || parts["initial catalog"] || "master",
+    user: parts["user id"] || parts["uid"] || parts["user"] || "",
+    password: parts["password"] || parts["pwd"] || "",
+  };
+}
+
+/**
+ * Check Microsoft SQL Server and collect detailed metrics
+ */
+async function checkMssql(
+  connectionUrl: string,
+  timeoutSeconds: number
+): Promise<DatabaseMetricsResult> {
+  const sql = await import("mssql");
+
+  const result: DatabaseMetricsResult = {
+    isHealthy: false,
+    latency: 0,
+    errorMessage: null,
+    connectionCount: null,
+    activeConnections: null,
+    idleConnections: null,
+    queriesPerSecond: null,
+    slowQueries: null,
+    avgQueryTimeMs: null,
+    cacheHitRatio: null,
+    dbSizeBytes: null,
+    tableCount: null,
+  };
+
+  let pool: InstanceType<typeof sql.ConnectionPool> | null = null;
+  try {
+    // Parse the connection URL into config
+    const parsed = parseMssqlConnectionUrl(connectionUrl);
+
+    const config: MssqlConfig = {
+      server: parsed.server,
+      port: parsed.port,
+      database: parsed.database,
+      user: parsed.user,
+      password: parsed.password,
+      options: {
+        trustServerCertificate: true,
+        connectTimeout: timeoutSeconds * 1000,
+        requestTimeout: timeoutSeconds * 1000,
+      },
+    };
+
+    pool = await sql.connect(config);
+
+    // Health check
+    await pool.request().query("SELECT 1");
+    result.isHealthy = true;
+
+    // Get connection stats
+    const connStats = await pool.request().query(`
+      SELECT 
+        COUNT(*) as total_connections,
+        SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as active_connections,
+        SUM(CASE WHEN status = 'sleeping' THEN 1 ELSE 0 END) as idle_connections
+      FROM sys.dm_exec_sessions
+      WHERE is_user_process = 1
+    `);
+    if (connStats.recordset[0]) {
+      result.connectionCount = connStats.recordset[0].total_connections || 0;
+      result.activeConnections = connStats.recordset[0].active_connections || 0;
+      result.idleConnections = connStats.recordset[0].idle_connections || 0;
+    }
+
+    // Get database size
+    const sizeStats = await pool.request().query(`
+      SELECT 
+        SUM(size * 8 * 1024) as db_size_bytes
+      FROM sys.database_files
+    `);
+    if (sizeStats.recordset[0]) {
+      result.dbSizeBytes = sizeStats.recordset[0].db_size_bytes || null;
+    }
+
+    // Get table count
+    const tableStats = await pool.request().query(`
+      SELECT COUNT(*) as table_count 
+      FROM sys.tables
+      WHERE type = 'U'
+    `);
+    if (tableStats.recordset[0]) {
+      result.tableCount = tableStats.recordset[0].table_count || 0;
+    }
+
+    // Get cache hit ratio (buffer cache)
+    const cacheStats = await pool.request().query(`
+      SELECT 
+        CASE 
+          WHEN (a.cntr_value + b.cntr_value) > 0 
+          THEN CAST(a.cntr_value * 100.0 / (a.cntr_value + b.cntr_value) AS DECIMAL(5,2))
+          ELSE 100 
+        END as cache_hit_ratio
+      FROM sys.dm_os_performance_counters a
+      JOIN sys.dm_os_performance_counters b 
+        ON a.object_name = b.object_name
+      WHERE a.counter_name = 'Buffer cache hit ratio'
+        AND b.counter_name = 'Buffer cache hit ratio base'
+        AND a.object_name LIKE '%Buffer Manager%'
+    `);
+    if (cacheStats.recordset[0]) {
+      result.cacheHitRatio = parseFloat(cacheStats.recordset[0].cache_hit_ratio) || null;
+    }
+
+    await pool.close();
+  } catch (error) {
+    try {
+      if (pool) await pool.close();
+    } catch {}
+    result.isHealthy = false;
+    result.errorMessage = error instanceof Error ? error.message : "MSSQL connection failed";
+  }
+
+  return result;
+}
 /**
  * Get default port for database protocol (kept for reference)
  */
