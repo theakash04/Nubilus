@@ -500,17 +500,27 @@ export const monitoringWorker = new Worker<MonitoringJobData>(
       const data = job.data as EndpointJobData;
       const result = await checkEndpoint(data);
 
-      // Store the health check result
-      await insertHealthCheck({
-        endpoint_id: targetId,
-        status_code: result.statusCode,
-        response_time: result.responseTime,
-        is_up: result.isUp,
-        error_message: result.errorMessage,
-        checked_from: "scheduler",
-      });
+      try {
+        await insertHealthCheck({
+          endpoint_id: targetId,
+          status_code: result.statusCode,
+          response_time: result.responseTime,
+          is_up: result.isUp,
+          error_message: result.errorMessage,
+          checked_from: "scheduler",
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("foreign key constraint")) {
+          console.log(
+            `[Monitoring] Endpoint ${targetId} no longer exists, removing from monitoring`
+          );
+          const { removeEndpointMonitoring } = await import("./monitoring.scheduler");
+          await removeEndpointMonitoring(targetId);
+          return { skipped: true, reason: "target_deleted" };
+        }
+        throw error;
+      }
 
-      // Trigger alert if endpoint is down
       if (!result.isUp) {
         await addAlertNotification({
           orgId,

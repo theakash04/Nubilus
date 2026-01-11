@@ -30,6 +30,10 @@ export async function scheduleEndpointMonitoring(endpoint: Endpoint): Promise<vo
     timeout: endpoint.timeout,
   };
 
+  await monitoringQueue.add("check-endpoint", jobData, {
+    jobId: `${jobId}-initial`,
+  });
+
   await monitoringQueue.add(`check-endpoint`, jobData, {
     repeat: {
       every: intervalMs,
@@ -46,23 +50,38 @@ export async function scheduleEndpointMonitoring(endpoint: Endpoint): Promise<vo
 export async function removeEndpointMonitoring(endpointId: string): Promise<void> {
   const jobId = getMonitoringJobId("endpoint", endpointId);
 
-  // Get all repeatable jobs and find the one for this endpoint
+  // Remove the repeatable job definition
   const repeatableJobs = await monitoringQueue.getRepeatableJobs();
   const job = repeatableJobs.find(j => j.id === jobId);
 
   if (job) {
     await monitoringQueue.removeRepeatableByKey(job.key);
-    console.log(`[Monitoring] Removed endpoint ${endpointId} from monitoring`);
   }
+
+  // Also remove any pending jobs (initial check or delayed jobs) from the queue
+  const initialJob = await monitoringQueue.getJob(`${jobId}-initial`);
+  if (initialJob) {
+    await initialJob.remove();
+  }
+
+  // Remove any delayed/waiting jobs with this jobId
+  const delayedJob = await monitoringQueue.getJob(jobId);
+  if (delayedJob) {
+    await delayedJob.remove();
+  }
+
+  console.log(`[Monitoring] Removed endpoint ${endpointId} from monitoring`);
 }
 
 /**
  * Update endpoint monitoring (remove old schedule and add new one)
  */
 export async function updateEndpointMonitoring(endpoint: Endpoint): Promise<void> {
+  console.log(`[Monitoring] Updating endpoint ${endpoint.id} monitoring`);
   await removeEndpointMonitoring(endpoint.id);
 
   if (endpoint.enabled) {
+    console.log(`[Monitoring] Updating endpoint ${endpoint.id} monitoring`);
     await scheduleEndpointMonitoring(endpoint);
   }
 }
@@ -88,6 +107,12 @@ export async function scheduleDatabaseMonitoring(database: DatabaseTarget): Prom
     timeout: database.timeout,
   };
 
+  // immediate
+  await monitoringQueue.add("check-database", jobData, {
+    jobId: `${jobId}-initial`,
+  });
+
+  // scheduled
   await monitoringQueue.add(`check-database`, jobData, {
     repeat: {
       every: intervalMs,
@@ -104,13 +129,27 @@ export async function scheduleDatabaseMonitoring(database: DatabaseTarget): Prom
 export async function removeDatabaseMonitoring(databaseId: string): Promise<void> {
   const jobId = getMonitoringJobId("database", databaseId);
 
+  // Remove the repeatable job definition
   const repeatableJobs = await monitoringQueue.getRepeatableJobs();
   const job = repeatableJobs.find(j => j.id === jobId);
 
   if (job) {
     await monitoringQueue.removeRepeatableByKey(job.key);
-    console.log(`[Monitoring] Removed database ${databaseId} from monitoring`);
   }
+
+  // Also remove any pending jobs (initial check or delayed jobs) from the queue
+  const initialJob = await monitoringQueue.getJob(`${jobId}-initial`);
+  if (initialJob) {
+    await initialJob.remove();
+  }
+
+  // Remove any delayed/waiting jobs with this jobId
+  const delayedJob = await monitoringQueue.getJob(jobId);
+  if (delayedJob) {
+    await delayedJob.remove();
+  }
+
+  console.log(`[Monitoring] Removed database ${databaseId} from monitoring`);
 }
 
 /**

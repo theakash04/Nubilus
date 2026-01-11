@@ -59,7 +59,11 @@ export async function createEndpointHandler(req: Request, res: Response) {
   const hasAccess = await userHasOrgPermission(userId, orgId, "write");
   if (!hasAccess) throw new AppError("Access denied", 403);
 
+  console.log(req.body);
+
   const data = req.body as CreateEndpointInput;
+  console.log(data);
+
   if (!data.name?.trim() || !data.url?.trim()) {
     throw new AppError("Name and URL are required", 400);
   }
@@ -82,12 +86,14 @@ export async function updateEndpointHandler(req: Request, res: Response) {
   if (!hasAccess) throw new AppError("Access denied", 403);
 
   const updates = req.body as UpdateEndpointInput;
+  console.log(req.body);
+  console.log(updates);
   const endpoint = await updateEndpoint(endpointId, orgId, updates);
 
   if (!endpoint) throw new AppError("Endpoint not found", 404);
 
-  // Update monitoring schedule if interval or enabled status changed
   if (updates.check_interval !== undefined || updates.enabled !== undefined) {
+    console.log("Updating monitoring schedule for endpoint", endpointId);
     await updateEndpointMonitoring(endpoint);
   }
 
@@ -103,7 +109,6 @@ export async function deleteEndpointHandler(req: Request, res: Response) {
   const hasAccess = await userHasOrgPermission(userId, orgId, "manage");
   if (!hasAccess) throw new AppError("Access denied", 403);
 
-  // Remove from monitoring before deleting
   await removeEndpointMonitoring(endpointId);
 
   const deleted = await deleteEndpoint(endpointId, orgId);

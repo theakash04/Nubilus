@@ -47,8 +47,8 @@ function RouteComponent() {
   // Editable settings state
   const [isEditing, setIsEditing] = useState(false);
   const [settings, setSettings] = useState({
-    check_interval: 60,
-    timeout: 10,
+    check_interval: endpoint?.check_interval || 60,
+    timeout: endpoint?.timeout || 10,
   });
 
   // Sync settings when endpoint loads

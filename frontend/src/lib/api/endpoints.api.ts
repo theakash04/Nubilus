@@ -32,8 +32,8 @@ interface CreateEndpointData {
   name: string;
   url: string;
   method?: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
-  expectedStatus?: number;
-  checkInterval?: number;
+  expected_status_code?: number;
+  check_interval?: number;
   timeout?: number;
   tags?: string[];
 }

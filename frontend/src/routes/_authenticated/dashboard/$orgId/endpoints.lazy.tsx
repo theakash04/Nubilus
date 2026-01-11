@@ -55,8 +55,8 @@ function RouteComponent() {
       name: formData.name,
       url: formData.url,
       method: formData.method,
-      expectedStatus: formData.expectedStatus,
-      checkInterval: formData.checkInterval,
+      expected_status_code: formData.expectedStatus,
+      check_interval: formData.checkInterval,
       timeout: formData.timeout,
     });
 
