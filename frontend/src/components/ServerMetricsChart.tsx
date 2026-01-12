@@ -85,8 +85,11 @@ const METRIC_CONFIG = {
 type MetricKey = keyof typeof METRIC_CONFIG;
 
 const TIME_RANGES = {
-  "1h": { label: "1 Hour", hours: 1, limit: 60 },
+  "15m": { label: "15 Min", hours: 0.25, limit: 30 },
+  "30m": { label: "30 Min", hours: 0.5, limit: 60 },
+  "3h": { label: "3 Hours", hours: 3, limit: 360 },
   "6h": { label: "6 Hours", hours: 6, limit: 720 },
+  "12h": { label: "12 Hours", hours: 12, limit: 1440 },
   "24h": { label: "24 Hours", hours: 24, limit: 2880 },
   "7d": { label: "7 Days", hours: 24 * 7, limit: 20160 },
   "30d": { label: "30 Days", hours: 24 * 30, limit: 86400 },
@@ -101,7 +104,7 @@ export function ServerMetricsChart({
   const [metricsDropdownOpen, setMetricsDropdownOpen] = useState(false);
   const [timeRangeDropdownOpen, setTimeRangeDropdownOpen] = useState(false);
   const [selectedTimeRange, setSelectedTimeRange] =
-    useState<TimeRangeKey>("1h");
+    useState<TimeRangeKey>("30m");
 
   const [enabledMetrics, setEnabledMetrics] = useState<Set<MetricKey>>(
     new Set(["cpu", "memory", "disk"])
@@ -171,15 +174,24 @@ export function ServerMetricsChart({
 
     const now = new Date();
 
-    // intervalMinutes is used for sub-hour intervals (like 10 min for 1h range)
+    // intervalMinutes is used for sub-hour intervals
     let intervalMinutes: number;
     let bucketCount: number;
 
-    if (range.hours <= 1) {
-      intervalMinutes = 10;
+    if (range.hours <= 0.25) {
+      intervalMinutes = 3; // 3-minute buckets for 15 min
+      bucketCount = 6;
+    } else if (range.hours <= 0.5) {
+      intervalMinutes = 5; // 5-minute buckets for 30 min
+      bucketCount = 7;
+    } else if (range.hours <= 3) {
+      intervalMinutes = 30; // 30-minute buckets for 3h
       bucketCount = 7;
     } else if (range.hours <= 6) {
-      intervalMinutes = 60;
+      intervalMinutes = 60; // 1-hour buckets
+      bucketCount = 7;
+    } else if (range.hours <= 12) {
+      intervalMinutes = 120; // 2-hour buckets for 12h
       bucketCount = 7;
     } else if (range.hours <= 24) {
       intervalMinutes = 180; // 3-hour buckets

@@ -85,8 +85,11 @@ type MetricKey = keyof typeof METRIC_CONFIG;
 
 // Time range options
 const TIME_RANGES = {
-  "1h": { label: "1 Hour", hours: 1, limit: 60 },
+  "15m": { label: "15 Min", hours: 0.25, limit: 30 },
+  "30m": { label: "30 Min", hours: 0.5, limit: 60 },
+  "3h": { label: "3 Hours", hours: 3, limit: 360 },
   "6h": { label: "6 Hours", hours: 6, limit: 720 },
+  "12h": { label: "12 Hours", hours: 12, limit: 1440 },
   "24h": { label: "24 Hours", hours: 24, limit: 2880 },
   "7d": { label: "7 Days", hours: 24 * 7, limit: 20160 },
   "30d": { label: "30 Days", hours: 24 * 30, limit: 86400 },
@@ -104,7 +107,7 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
   const [metricsDropdownOpen, setMetricsDropdownOpen] = useState(false);
   const [timeRangeDropdownOpen, setTimeRangeDropdownOpen] = useState(false);
   const [selectedTimeRange, setSelectedTimeRange] =
-    useState<TimeRangeKey>("1h");
+    useState<TimeRangeKey>("30m");
 
   // Default enabled metrics
   const [enabledMetrics, setEnabledMetrics] = useState<Set<MetricKey>>(
@@ -157,7 +160,7 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
 
     // Format time based on selected range
     const formatTime = (date: Date) => {
-      // For 1h range, show time with minutes
+      // For sub-hour ranges, show time with minutes
       if (range.hours <= 1) {
         return date.toLocaleTimeString("en-US", {
           hour: "numeric",
@@ -165,7 +168,7 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
           hour12: true,
         });
       }
-      // For 6h and 24h range, show hour with AM/PM
+      // For 3h to 24h range, show hour with AM/PM
       else if (range.hours <= 24) {
         return date.toLocaleTimeString("en-US", {
           hour: "numeric",
@@ -191,15 +194,24 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
 
     const now = new Date();
 
-    // intervalMinutes is used for sub-hour intervals (like 10 min for 1h range)
+    // intervalMinutes is used for sub-hour intervals
     let intervalMinutes: number;
     let bucketCount: number;
 
-    if (range.hours <= 1) {
-      intervalMinutes = 10; // 10-minute buckets for 1 hour
-      bucketCount = 7; // 6 intervals + current
+    if (range.hours <= 0.25) {
+      intervalMinutes = 3; // 3-minute buckets for 15 min
+      bucketCount = 6;
+    } else if (range.hours <= 0.5) {
+      intervalMinutes = 5; // 5-minute buckets for 30 min
+      bucketCount = 7;
+    } else if (range.hours <= 3) {
+      intervalMinutes = 30; // 30-minute buckets for 3h
+      bucketCount = 7;
     } else if (range.hours <= 6) {
       intervalMinutes = 60; // 1-hour buckets
+      bucketCount = 7;
+    } else if (range.hours <= 12) {
+      intervalMinutes = 120; // 2-hour buckets for 12h
       bucketCount = 7;
     } else if (range.hours <= 24) {
       intervalMinutes = 180; // 3-hour buckets
