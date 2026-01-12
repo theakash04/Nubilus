@@ -160,15 +160,15 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
 
     // Format time based on selected range
     const formatTime = (date: Date) => {
-      // For sub-hour ranges, show time with minutes
-      if (range.hours <= 1) {
+      // For ranges with sub-hour buckets, show time with minutes
+      if (range.hours <= 3) {
         return date.toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
           hour12: true,
         });
       }
-      // For 3h to 24h range, show hour with AM/PM
+      // For 6h to 24h range, show hour with AM/PM
       else if (range.hours <= 24) {
         return date.toLocaleTimeString("en-US", {
           hour: "numeric",
@@ -194,34 +194,42 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
 
     const now = new Date();
 
-    // intervalMinutes is used for sub-hour intervals
+    // intervalMinutes and bucketCount calculated to properly fill the time range
     let intervalMinutes: number;
     let bucketCount: number;
 
     if (range.hours <= 0.25) {
-      intervalMinutes = 3; // 3-minute buckets for 15 min
+      // 15 min: 3-min intervals, 5 buckets (0, 3, 6, 9, 12, 15)
+      intervalMinutes = 3;
       bucketCount = 6;
     } else if (range.hours <= 0.5) {
-      intervalMinutes = 5; // 5-minute buckets for 30 min
+      // 30 min: 5-min intervals, 6 buckets (0, 5, 10, 15, 20, 25, 30)
+      intervalMinutes = 5;
       bucketCount = 7;
     } else if (range.hours <= 3) {
-      intervalMinutes = 30; // 30-minute buckets for 3h
-      bucketCount = 7;
+      // 3h: 30-min intervals, 6 buckets
+      intervalMinutes = 30;
+      bucketCount = 6;
     } else if (range.hours <= 6) {
-      intervalMinutes = 60; // 1-hour buckets
-      bucketCount = 7;
+      // 6h: 1-hour intervals, 6 buckets
+      intervalMinutes = 60;
+      bucketCount = 6;
     } else if (range.hours <= 12) {
-      intervalMinutes = 120; // 2-hour buckets for 12h
-      bucketCount = 7;
+      // 12h: 2-hour intervals, 6 buckets
+      intervalMinutes = 120;
+      bucketCount = 6;
     } else if (range.hours <= 24) {
-      intervalMinutes = 180; // 3-hour buckets
-      bucketCount = 9;
-    } else if (range.hours <= 24 * 7) {
-      intervalMinutes = 1440; // 24-hour buckets
+      // 24h: 3-hour intervals, 8 buckets
+      intervalMinutes = 180;
       bucketCount = 8;
+    } else if (range.hours <= 24 * 7) {
+      // 7d: 24-hour intervals, 7 buckets
+      intervalMinutes = 1440;
+      bucketCount = 7;
     } else {
-      intervalMinutes = 4320; // 72-hour buckets
-      bucketCount = 11;
+      // 30d: 72-hour intervals, 10 buckets
+      intervalMinutes = 4320;
+      bucketCount = 10;
     }
 
     // Helper to get local-time-aligned bucket start
