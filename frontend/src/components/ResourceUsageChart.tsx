@@ -104,7 +104,7 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
   const [metricsDropdownOpen, setMetricsDropdownOpen] = useState(false);
   const [timeRangeDropdownOpen, setTimeRangeDropdownOpen] = useState(false);
   const [selectedTimeRange, setSelectedTimeRange] =
-    useState<TimeRangeKey>("6h");
+    useState<TimeRangeKey>("1h");
 
   // Default enabled metrics
   const [enabledMetrics, setEnabledMetrics] = useState<Set<MetricKey>>(
