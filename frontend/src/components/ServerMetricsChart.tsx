@@ -85,6 +85,7 @@ const METRIC_CONFIG = {
 type MetricKey = keyof typeof METRIC_CONFIG;
 
 const TIME_RANGES = {
+  "1h": { label: "1 Hour", hours: 1, limit: 60 },
   "6h": { label: "6 Hours", hours: 6, limit: 720 },
   "24h": { label: "24 Hours", hours: 24, limit: 2880 },
   "7d": { label: "7 Days", hours: 24 * 7, limit: 20160 },
@@ -100,7 +101,7 @@ export function ServerMetricsChart({
   const [metricsDropdownOpen, setMetricsDropdownOpen] = useState(false);
   const [timeRangeDropdownOpen, setTimeRangeDropdownOpen] = useState(false);
   const [selectedTimeRange, setSelectedTimeRange] =
-    useState<TimeRangeKey>("6h");
+    useState<TimeRangeKey>("1h");
 
   const [enabledMetrics, setEnabledMetrics] = useState<Set<MetricKey>>(
     new Set(["cpu", "memory", "disk"])
@@ -143,7 +144,13 @@ export function ServerMetricsChart({
     const range = TIME_RANGES[selectedTimeRange];
 
     const formatTime = (date: Date) => {
-      if (range.hours <= 24) {
+      if (range.hours <= 1) {
+        return date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+      } else if (range.hours <= 24) {
         return date.toLocaleTimeString("en-US", {
           hour: "numeric",
           hour12: true,
@@ -164,36 +171,46 @@ export function ServerMetricsChart({
 
     const now = new Date();
 
-    const getLocalBucketStart = (date: Date, intervalHours: number) => {
+    // intervalMinutes is used for sub-hour intervals (like 10 min for 1h range)
+    let intervalMinutes: number;
+    let bucketCount: number;
+
+    if (range.hours <= 1) {
+      intervalMinutes = 10;
+      bucketCount = 7;
+    } else if (range.hours <= 6) {
+      intervalMinutes = 60;
+      bucketCount = 7;
+    } else if (range.hours <= 24) {
+      intervalMinutes = 180; // 3-hour buckets
+      bucketCount = 9;
+    } else if (range.hours <= 24 * 7) {
+      intervalMinutes = 1440; // 24-hour buckets
+      bucketCount = 8;
+    } else {
+      intervalMinutes = 4320; // 72-hour buckets
+      bucketCount = 11;
+    }
+
+    const getLocalBucketStart = (date: Date, intervalMins: number) => {
       const d = new Date(date);
-      if (intervalHours >= 24) {
+      if (intervalMins >= 1440) {
         d.setHours(0, 0, 0, 0);
-      } else {
+      } else if (intervalMins >= 60) {
+        const intervalHours = intervalMins / 60;
         const hours = d.getHours();
         const alignedHour = Math.floor(hours / intervalHours) * intervalHours;
         d.setHours(alignedHour, 0, 0, 0);
+      } else {
+        // Minute-based intervals (e.g., 10 minutes)
+        const minutes = d.getMinutes();
+        const alignedMinute = Math.floor(minutes / intervalMins) * intervalMins;
+        d.setMinutes(alignedMinute, 0, 0);
       }
       return d;
     };
 
-    let intervalHours: number;
-    let bucketCount: number;
-
-    if (range.hours <= 6) {
-      intervalHours = 1;
-      bucketCount = 7;
-    } else if (range.hours <= 24) {
-      intervalHours = 3;
-      bucketCount = 9;
-    } else if (range.hours <= 24 * 7) {
-      intervalHours = 24;
-      bucketCount = 8;
-    } else {
-      intervalHours = 72;
-      bucketCount = 11;
-    }
-
-    const intervalMs = intervalHours * 60 * 60 * 1000;
+    const intervalMs = intervalMinutes * 60 * 1000;
 
     const buckets: Map<
       number,
@@ -217,7 +234,7 @@ export function ServerMetricsChart({
       }
     > = new Map();
 
-    const currentBucketStart = getLocalBucketStart(now, intervalHours);
+    const currentBucketStart = getLocalBucketStart(now, intervalMinutes);
 
     for (let i = 0; i < bucketCount; i++) {
       const bucketTime = new Date(
@@ -307,7 +324,10 @@ export function ServerMetricsChart({
 
     metricsWithDeltas.forEach((m) => {
       const metricDate = new Date(m.time);
-      const metricBucketStart = getLocalBucketStart(metricDate, intervalHours);
+      const metricBucketStart = getLocalBucketStart(
+        metricDate,
+        intervalMinutes
+      );
       const bucketKey = metricBucketStart.getTime();
 
       if (buckets.has(bucketKey)) {
@@ -323,7 +343,6 @@ export function ServerMetricsChart({
         bucket.diskWrite += m.diskWriteDelta / (1024 * 1024);
         bucket.count += 1;
 
-        // Track max values for spike detection
         bucket.cpuMax = Math.max(bucket.cpuMax, m.cpu_usage);
         bucket.memoryMax = Math.max(bucket.memoryMax, m.memory_usage);
         bucket.diskMax = Math.max(bucket.diskMax, m.disk_usage);

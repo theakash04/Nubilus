@@ -85,6 +85,7 @@ type MetricKey = keyof typeof METRIC_CONFIG;
 
 // Time range options
 const TIME_RANGES = {
+  "1h": { label: "1 Hour", hours: 1, limit: 60 },
   "6h": { label: "6 Hours", hours: 6, limit: 720 },
   "24h": { label: "24 Hours", hours: 24, limit: 2880 },
   "7d": { label: "7 Days", hours: 24 * 7, limit: 20160 },
@@ -156,8 +157,16 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
 
     // Format time based on selected range
     const formatTime = (date: Date) => {
+      // For 1h range, show time with minutes
+      if (range.hours <= 1) {
+        return date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+      }
       // For 6h and 24h range, show hour with AM/PM
-      if (range.hours <= 24) {
+      else if (range.hours <= 24) {
         return date.toLocaleTimeString("en-US", {
           hour: "numeric",
           hour12: true,
@@ -182,39 +191,49 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
 
     const now = new Date();
 
+    // intervalMinutes is used for sub-hour intervals (like 10 min for 1h range)
+    let intervalMinutes: number;
+    let bucketCount: number;
+
+    if (range.hours <= 1) {
+      intervalMinutes = 10; // 10-minute buckets for 1 hour
+      bucketCount = 7; // 6 intervals + current
+    } else if (range.hours <= 6) {
+      intervalMinutes = 60; // 1-hour buckets
+      bucketCount = 7;
+    } else if (range.hours <= 24) {
+      intervalMinutes = 180; // 3-hour buckets
+      bucketCount = 9;
+    } else if (range.hours <= 24 * 7) {
+      intervalMinutes = 1440; // 24-hour buckets
+      bucketCount = 8;
+    } else {
+      intervalMinutes = 4320; // 72-hour buckets
+      bucketCount = 11;
+    }
+
     // Helper to get local-time-aligned bucket start
-    const getLocalBucketStart = (date: Date, intervalHours: number) => {
+    const getLocalBucketStart = (date: Date, intervalMins: number) => {
       const d = new Date(date);
-      if (intervalHours >= 24) {
-        // Align to start of day in local time
+      if (intervalMins >= 1440) {
+        // 24 hours or more - align to day start
         d.setHours(0, 0, 0, 0);
-      } else {
-        // Align to hour boundary
+      } else if (intervalMins >= 60) {
+        // Hour-based intervals
+        const intervalHours = intervalMins / 60;
         const hours = d.getHours();
         const alignedHour = Math.floor(hours / intervalHours) * intervalHours;
         d.setHours(alignedHour, 0, 0, 0);
+      } else {
+        // Minute-based intervals (e.g., 10 minutes)
+        const minutes = d.getMinutes();
+        const alignedMinute = Math.floor(minutes / intervalMins) * intervalMins;
+        d.setMinutes(alignedMinute, 0, 0);
       }
       return d;
     };
 
-    let intervalHours: number;
-    let bucketCount: number;
-
-    if (range.hours <= 6) {
-      intervalHours = 1; // 1 hour buckets for 6h view
-      bucketCount = 7;
-    } else if (range.hours <= 24) {
-      intervalHours = 3; // 3 hour buckets for 24h view
-      bucketCount = 9;
-    } else if (range.hours <= 24 * 7) {
-      intervalHours = 24; // 1 day buckets for 7d view
-      bucketCount = 8;
-    } else {
-      intervalHours = 72; // 3 day buckets for 30d view
-      bucketCount = 11;
-    }
-
-    const intervalMs = intervalHours * 60 * 60 * 1000;
+    const intervalMs = intervalMinutes * 60 * 1000;
 
     // Create empty buckets aligned to local time
     const buckets: Map<
@@ -236,7 +255,7 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
     > = new Map();
 
     // Get current bucket start in local time
-    const currentBucketStart = getLocalBucketStart(now, intervalHours);
+    const currentBucketStart = getLocalBucketStart(now, intervalMinutes);
 
     // Generate buckets backwards from current
     for (let i = 0; i < bucketCount; i++) {
@@ -338,7 +357,10 @@ export function ResourceUsageChart({ orgId }: ResourceUsageChartProps) {
     metricsWithDeltas.forEach((m) => {
       const metricDate = new Date(m.time);
       // Use same local-time-aligned bucket calculation
-      const metricBucketStart = getLocalBucketStart(metricDate, intervalHours);
+      const metricBucketStart = getLocalBucketStart(
+        metricDate,
+        intervalMinutes
+      );
       const bucketKey = metricBucketStart.getTime();
 
       if (buckets.has(bucketKey)) {
