@@ -121,3 +121,13 @@ export async function setUserPassword(userId: string, passwordHash: string) {
   `;
   return user ?? null;
 }
+
+export async function resetUserPassword(userId: string, passwordHash: string) {
+  const [user] = await sql<User[]>`
+    UPDATE users
+    SET password_hash = ${passwordHash}, updated_at = NOW()
+    WHERE id = ${userId}::uuid
+    RETURNING *
+  `;
+  return user ?? null;
+}

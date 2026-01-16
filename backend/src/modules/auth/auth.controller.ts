@@ -4,8 +4,8 @@ import {
   findAllRefreshTokenByUserId,
   getUserByEmail,
   getUserById,
+  resetUserPassword,
   revokeRefreshToken,
-  saveRefreshToken,
 } from "../../db/queries/users";
 import { AppError, sendResponse } from "../../utils/handler";
 import { v4 as uuidv4 } from "uuid";
@@ -15,8 +15,7 @@ import { sha256Hex } from "../../utils/crypto";
 import { createSession } from "../../utils/createSession";
 import { addEmailJob } from "../../queues";
 
-// otp store
-const otpStore = new Map<string, { otp: string; email: string; expiresAt: number }>();
+import redis from "../../db/redis";
 
 export async function login(req: Request, res: Response) {
   if (!req.body) {
@@ -85,11 +84,15 @@ export async function requestSessionManagementOTP(req: Request, res: Response) {
   const otp = crypto.randomInt(100000, 999999).toString();
   const otpId = crypto.randomUUID();
 
-  otpStore.set(otpId, {
-    otp,
-    email: user.email,
-    expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
-  });
+  await redis.set(
+    otpId,
+    JSON.stringify({
+      otp,
+      email: user.email,
+    }),
+    "EX",
+    5 * 60 // 5 minutes
+  );
 
   await addEmailJob({
     to: user.email,
@@ -102,8 +105,7 @@ export async function requestSessionManagementOTP(req: Request, res: Response) {
   `,
   });
 
-  // Clean up expired OTPs
-  setTimeout(() => otpStore.delete(otpId), 5 * 60 * 1000);
+  // Clean up expired OTPs - Redis handles this automatically with TTL
 
   sendResponse(res, 200, "OTP sent to your email", { otpId });
 }
@@ -115,24 +117,21 @@ export async function verifySessionManagementOTP(req: Request, res: Response) {
     throw new AppError("OTP ID and OTP are required", 400);
   }
 
-  const storedData = otpStore.get(otpId);
+  const storedDataStr = await redis.get(otpId);
 
-  if (!storedData) {
+  if (!storedDataStr) {
     throw new AppError("Invalid or expired OTP", 401);
   }
 
-  if (storedData.expiresAt < Date.now()) {
-    otpStore.delete(otpId);
-    throw new AppError("OTP has expired", 401);
-  }
+  const storedData = JSON.parse(storedDataStr);
 
   if (storedData.otp !== otp) {
     throw new AppError("Invalid OTP", 401);
   }
 
-  otpStore.delete(otpId);
+  await redis.del(otpId);
 
-  const user = await getUserByEmail(storedData.email);
+  const user = await getUserByEmail(storedData.email!);
   if (!user) {
     throw new AppError("User not found", 404);
   }
@@ -272,4 +271,102 @@ export async function setPassword(req: Request, res: Response) {
   }
 
   sendResponse(res, 200, "Password set successfully");
+}
+
+export async function sendResetPassOtp(req: Request, res: Response) {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new AppError("Email is required", 400);
+  }
+
+  const user = await getUserByEmail(email);
+  if (!user) {
+    sendResponse(res, 200, "If this email is registered, you will receive an OTP");
+    return;
+  }
+
+  // generate 6-digit OTP
+  const otp = crypto.randomInt(100000, 999999).toString();
+
+  await redis.set(
+    `reset-pass:${email}`,
+    JSON.stringify({
+      otp,
+    }),
+    "EX",
+    10 * 60 // 10 minutes
+  );
+
+  await addEmailJob({
+    to: user.email,
+    subject: "Your One-Time Password (OTP)",
+    html: `
+    <p>Hello,</p>
+    <p>Your OTP is <strong>${otp}</strong>.</p>
+    <p>This code will expire in a few minutes.</p>
+    <p>If you did not request this, please ignore this email.</p>
+  `,
+  });
+
+  sendResponse(res, 200, "OTP sent to your email");
+}
+
+export async function verifyResetPassOtp(req: Request, res: Response) {
+  const { email, otp } = req.body;
+
+  if (!otp || !email) {
+    throw new AppError("OTP and email are required", 400);
+  }
+
+  const storedDataStr = await redis.get(`reset-pass:${email}`);
+
+  if (!storedDataStr) {
+    throw new AppError("Invalid or expired OTP", 401);
+  }
+
+  const storedData = JSON.parse(storedDataStr);
+
+  if (storedData.otp !== otp) {
+    throw new AppError("Invalid OTP", 401);
+  }
+
+  await redis.del(`reset-pass:${email}`);
+
+  const token = crypto.randomUUID();
+  await redis.set(token, email, "EX", 15 * 60);
+
+  sendResponse(res, 200, "OTP verified successfully", { token });
+}
+
+export async function resetPassword(req: Request, res: Response) {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    throw new AppError("Token and password are required", 400);
+  }
+
+  const email = await redis.get(token);
+
+  if (!email) {
+    throw new AppError("Invalid or expired token", 401);
+  }
+
+  const user = await getUserByEmail(email);
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  const saltRounds = 10;
+  const passwordHash = await bcrypt.hash(password, saltRounds);
+
+  const updated = await resetUserPassword(user.id, passwordHash);
+  if (!updated) {
+    throw new AppError("Password already set or user not found", 400);
+  }
+
+  await redis.del(token);
+
+  sendResponse(res, 200, "Password reset successfully");
 }

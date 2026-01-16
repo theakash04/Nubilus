@@ -5,6 +5,9 @@ import type {
   SessionRequestProps,
   User,
   VerifySessionProps,
+  SendResetOtpProps,
+  VerifyResetOtpProps,
+  ResetPasswordProps,
 } from "../types/auth.types";
 import api from "./AxiosInstance";
 
@@ -110,5 +113,32 @@ export async function acceptInvite(
 
 export async function setPassword(password: string): Promise<ApiResponse> {
   const res = await api.post<ApiResponse>("/auth/set-password", { password });
+  return res.data;
+}
+
+export async function sendResetPassOtp(
+  props: SendResetOtpProps
+): Promise<ApiResponse> {
+  const res = await api.post<ApiResponse>("/auth/reset-password/send", props);
+  return res.data;
+}
+
+interface VerifyResetOtpRes {
+  token: string;
+}
+export async function verifyResetPassOtp(
+  props: VerifyResetOtpProps
+): Promise<ApiResponse<VerifyResetOtpRes>> {
+  const res = await api.post<ApiResponse<VerifyResetOtpRes>>(
+    "/auth/reset-password/verify",
+    props
+  );
+  return res.data;
+}
+
+export async function resetPassword(
+  props: ResetPasswordProps
+): Promise<ApiResponse> {
+  const res = await api.post<ApiResponse>("/auth/reset-password", props);
   return res.data;
 }

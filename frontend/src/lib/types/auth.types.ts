@@ -32,3 +32,17 @@ export interface VerifySessionProps {
 export interface LoguoutSessionProps {
   sessionId: string;
 }
+
+export interface SendResetOtpProps {
+  email: string;
+}
+
+export interface VerifyResetOtpProps {
+  email: string;
+  otp: string;
+}
+
+export interface ResetPasswordProps {
+  token: string;
+  password: string;
+}

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useLogin } from "@/hooks/useAuthActions";
 import { getUser } from "@/lib/api/Authapi";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -73,6 +73,9 @@ function App() {
           placeholder="••••••••"
           required
         />
+        <Link to="/forgot-password" className="text-sm text-primary flex items-center justify-end pr-2">
+          Forgot Password?
+        </Link>
 
         <Button
           className="w-full flex justify-center py-2.5 shadow-lg shadow-primary-500/20 cursor-pointer"

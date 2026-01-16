@@ -6,7 +6,10 @@ import {
   logout,
   logoutFromSession,
   requestSessionManagementOTP,
+  resetPassword,
+  sendResetPassOtp,
   setPassword,
+  verifyResetPassOtp,
   verifySessionManagementOTP,
 } from "./auth.controller";
 import { authorize } from "../../middleware/authenticate.middleware";
@@ -18,6 +21,9 @@ router.post("/request", requestSessionManagementOTP);
 router.post("/verify", verifySessionManagementOTP);
 router.get("/session", getActiveSessions);
 router.delete("/session/logout", logoutFromSession);
+router.post("/reset-password/send", sendResetPassOtp);
+router.post("/reset-password/verify", verifyResetPassOtp);
+router.post("/reset-password", resetPassword);
 
 // auth needed
 router.get("/user", authorize, getUser);
