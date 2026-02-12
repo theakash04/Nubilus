@@ -8,20 +8,18 @@ export const emailWorker = new Worker<EmailJobData>(
   async (job: Job<EmailJobData>) => {
     const { to, subject, html } = job.data;
 
-    console.log(`Processing email job ${job.id} to: ${to}`);
+    console.log(`Processing email job ${job.id} to: ${to} (attempt ${job.attemptsMade + 1})`);
 
+    // sendEmail now throws on failure, letting BullMQ handle retries
     const result = await sendEmail({ to, subject, html });
-
-    if (!result) {
-      throw new Error(`Failed to send email to ${to}`);
-    }
 
     console.log(`Email sent successfully to: ${to}`);
     return result;
   },
   {
     connection: redisConnection,
-    concurrency: 5,
+    // Keep concurrency low to avoid opening too many SMTP connections at once
+    concurrency: 2,
   }
 );
 
