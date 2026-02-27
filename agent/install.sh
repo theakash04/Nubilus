@@ -225,7 +225,7 @@ setup_windows_service() {
 
     # Create the service
     sc.exe create nubilus-agent \
-        binPath= "\"${WIN_BINARY}\" run" \
+        binPath= "\"${WIN_BINARY}\" service" \
         start= auto \
         DisplayName= "Nubilus Monitoring Agent" &> /dev/null \
         || error "Failed to create Windows Service"

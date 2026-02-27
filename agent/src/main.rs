@@ -8,6 +8,9 @@ mod collectors;
 mod config;
 mod models;
 
+#[cfg(windows)]
+mod windows_service;
+
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
@@ -42,6 +45,9 @@ struct Cli {
 enum Commands {
     /// Run the agent (default)
     Run,
+
+    /// Run as a Windows Service (called by SCM, Windows only)
+    Service,
 
     /// Generate a configuration file template
     Init {
@@ -96,6 +102,7 @@ async fn main() -> Result<()> {
 
     match cli.command.unwrap_or(Commands::Run) {
         Commands::Run => run_agent(&cli.config).await,
+        Commands::Service => run_as_service(),
         Commands::Init { output } => init_config(output),
         Commands::Configure { api_key, api_url, name } => {
             configure_agent(&cli.config, api_key, api_url, name)
@@ -104,6 +111,21 @@ async fn main() -> Result<()> {
         Commands::Metrics => show_metrics(),
         Commands::Update => update_agent().await,
         Commands::Uninstall { keep_config } => uninstall_agent(keep_config),
+    }
+}
+
+/// Run as a Windows Service (dispatches to SCM).
+/// On non-Windows platforms, prints an error and exits.
+fn run_as_service() -> Result<()> {
+    #[cfg(windows)]
+    {
+        windows_service::run()
+    }
+    #[cfg(not(windows))]
+    {
+        eprintln!("The 'service' command is only available on Windows.");
+        eprintln!("Use 'nubilus-agent run' to run the agent on this platform.");
+        std::process::exit(1);
     }
 }
 

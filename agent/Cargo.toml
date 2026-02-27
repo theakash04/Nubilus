@@ -51,6 +51,10 @@ os_info = "3.7"
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
+# Windows Service API
+[target.'cfg(windows)'.dependencies]
+windows-service = "0.7"
+
 [profile.release]
 opt-level = 3
 lto = true

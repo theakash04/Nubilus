@@ -76,11 +76,9 @@ sc.exe start nubilus-agent
 sc.exe query nubilus-agent
 ```
 
-#### Run Manually (all platforms)
-
-```bash
-nubilus-agent run
-```
+> **Note**: The installer registers the agent with `nubilus-agent service` which
+> implements the Windows Service Control Manager (SCM) protocol. For manual/console
+> use, run `nubilus-agent run` instead.
 
 ## Commands
 

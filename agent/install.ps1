@@ -126,7 +126,7 @@ http_health_checks = false
     }
 
     sc.exe create "nubilus-agent" `
-        binPath= "`"$DEST_PATH`" run" `
+        binPath= "`"$DEST_PATH`" service" `
         start= auto `
         DisplayName= "Nubilus Monitoring Agent" 2>&1 | Out-Null
 
