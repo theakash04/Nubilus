@@ -69,7 +69,7 @@ export function ServerOverviewTab({
                 <div
                   className="absolute inset-0 bg-linear-to-r from-primary-500/10 to-transparent"
                   style={{
-                    width: `${Math.min(latestMetric.cpu_usage, 100)}%`,
+                    width: `${Math.min(latestMetric.cpu_usage ?? 0, 100)}%`,
                   }}
                 />
                 <div className="relative">
@@ -81,20 +81,20 @@ export function ServerOverviewTab({
                       </span>
                     </div>
                     <span className="text-2xl font-bold text-foreground">
-                      {latestMetric.cpu_usage.toFixed(1)}%
+                      {(latestMetric.cpu_usage ?? 0).toFixed(1)}%
                     </span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-1.5">
                     <div
                       className="bg-primary h-1.5 rounded-full transition-all duration-500"
                       style={{
-                        width: `${Math.min(latestMetric.cpu_usage, 100)}%`,
+                        width: `${Math.min(latestMetric.cpu_usage ?? 0, 100)}%`,
                       }}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
                     {latestMetric.cpu_count} cores • Load:{" "}
-                    {latestMetric.load_average_1m.toFixed(2)}
+                    {(latestMetric.load_average_1m ?? 0).toFixed(2)}
                   </p>
                 </div>
               </Card>
@@ -103,7 +103,7 @@ export function ServerOverviewTab({
                 <div
                   className="absolute inset-0 bg-linear-to-r from-blue-500/10 to-transparent"
                   style={{
-                    width: `${Math.min(latestMetric.memory_usage, 100)}%`,
+                    width: `${Math.min(latestMetric.memory_usage ?? 0, 100)}%`,
                   }}
                 />
                 <div className="relative">
@@ -115,14 +115,14 @@ export function ServerOverviewTab({
                       </span>
                     </div>
                     <span className="text-2xl font-bold text-foreground">
-                      {latestMetric.memory_usage.toFixed(1)}%
+                      {(latestMetric.memory_usage ?? 0).toFixed(1)}%
                     </span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-1.5">
                     <div
                       className="bg-blue-500 h-1.5 rounded-full transition-all duration-500"
                       style={{
-                        width: `${Math.min(latestMetric.memory_usage, 100)}%`,
+                        width: `${Math.min(latestMetric.memory_usage ?? 0, 100)}%`,
                       }}
                     />
                   </div>
@@ -137,7 +137,7 @@ export function ServerOverviewTab({
                 <div
                   className="absolute inset-0 bg-linear-to-r from-emerald-500/10 to-transparent"
                   style={{
-                    width: `${Math.min(latestMetric.disk_usage, 100)}%`,
+                    width: `${Math.min(latestMetric.disk_usage ?? 0, 100)}%`,
                   }}
                 />
                 <div className="relative">
@@ -149,14 +149,14 @@ export function ServerOverviewTab({
                       </span>
                     </div>
                     <span className="text-2xl font-bold text-foreground">
-                      {latestMetric.disk_usage.toFixed(1)}%
+                      {(latestMetric.disk_usage ?? 0).toFixed(1)}%
                     </span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-1.5">
                     <div
                       className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
                       style={{
-                        width: `${Math.min(latestMetric.disk_usage, 100)}%`,
+                        width: `${Math.min(latestMetric.disk_usage ?? 0, 100)}%`,
                       }}
                     />
                   </div>

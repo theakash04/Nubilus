@@ -25,7 +25,7 @@ import {
 import { useState, useEffect } from "react";
 
 export const Route = createLazyFileRoute(
-  "/_authenticated/dashboard/$orgId/database/$database"
+  "/_authenticated/dashboard/$orgId/database/$database",
 )({
   component: RouteComponent,
 });
@@ -51,7 +51,7 @@ function RouteComponent() {
   const { data: dbData, isLoading: isLoadingDb } = useDatabase(orgId, dbId);
   const { data: metricsData, isLoading: isLoadingMetrics } = useDatabaseMetrics(
     orgId,
-    dbId
+    dbId,
   );
 
   const database = dbData?.data;
@@ -304,7 +304,7 @@ function RouteComponent() {
               <div className="bg-muted/50 rounded-lg p-4 text-center">
                 <p className="text-sm text-muted-foreground">Queries/sec</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {latestMetric.queries_per_second.toFixed(1)}
+                  {(latestMetric.queries_per_second ?? 0).toFixed(1)}
                 </p>
               </div>
             )}
@@ -314,9 +314,9 @@ function RouteComponent() {
               <div className="bg-muted/50 rounded-lg p-4 text-center">
                 <p className="text-sm text-muted-foreground">Cache Hit</p>
                 <p
-                  className={`text-2xl font-bold ${latestMetric.cache_hit_ratio >= 90 ? "text-success" : latestMetric.cache_hit_ratio >= 70 ? "text-warning" : "text-destructive"}`}
+                  className={`text-2xl font-bold ${(latestMetric.cache_hit_ratio ?? 0) >= 90 ? "text-success" : (latestMetric.cache_hit_ratio ?? 0) >= 70 ? "text-warning" : "text-destructive"}`}
                 >
-                  {latestMetric.cache_hit_ratio.toFixed(1)}%
+                  {(latestMetric.cache_hit_ratio ?? 0).toFixed(1)}%
                 </p>
               </div>
             )}

@@ -1,12 +1,14 @@
 # Nubilus Agent Installer for Windows
-# Usage: irm https://github.com/theakash04/Nubilus/releases/latest/download/install.ps1 | iex
+# Usage:
+#   curl.exe -L -o install.ps1 https://github.com/theakash04/Nubilus/releases/latest/download/install.ps1
+#   powershell -ExecutionPolicy Bypass -File .\install.ps1
 #
 # This script:
 # 1. Detects your architecture
 # 2. Downloads the correct binary
 # 3. Installs it to C:\Program Files\nubilus
 # 4. Creates the config directory
-# 5. Optionally registers as a Windows Service
+# 5. Adds the install directory to system PATH
 #
 
 #Requires -RunAsAdministrator
@@ -114,34 +116,13 @@ http_health_checks = false
         Write-Ok "Added to PATH (restart terminal to take effect)"
     }
 
-    # Register as Windows Service using sc.exe
-    Write-Info "Registering Windows service..."
-    $svcExists = sc.exe query "nubilus-agent" 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Write-Warn "Service already exists, stopping and removing..."
-        sc.exe stop "nubilus-agent" 2>&1 | Out-Null
-        Start-Sleep -Seconds 2
-        sc.exe delete "nubilus-agent" 2>&1 | Out-Null
-        Start-Sleep -Seconds 1
-    }
-
-    sc.exe create "nubilus-agent" `
-        binPath= "`"$DEST_PATH`" service" `
-        start= auto `
-        DisplayName= "Nubilus Monitoring Agent" 2>&1 | Out-Null
-
-    sc.exe description "nubilus-agent" "Lightweight server monitoring agent for the Nubilus platform" 2>&1 | Out-Null
-    sc.exe failure "nubilus-agent" reset= 86400 actions= restart/10000/restart/30000/restart/60000 2>&1 | Out-Null
-
-    Write-Ok "Windows service registered"
-
     # Verify installation
     Write-Info "Verifying installation..."
     try {
         $version = & $DEST_PATH --version 2>&1
         Write-Ok "Installed: $version"
     } catch {
-        Write-Warn "Could not verify version (binary may require restart)"
+        Write-Warn "Could not verify version (restart your terminal and try: nubilus-agent.exe --version)"
     }
 
     # Print next steps
@@ -155,18 +136,30 @@ http_health_checks = false
     Write-Host "  1. Edit the configuration file:" -ForegroundColor White
     Write-Host "     notepad $CONFIG_FILE" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "  2. Set your API key (get it from your Nubilus dashboard)" -ForegroundColor White
+    Write-Host "  2. Set your API key and backend URL" -ForegroundColor White
+    Write-Host "     (get the API key from your Nubilus dashboard)" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "  3. Start the agent:" -ForegroundColor White
+    Write-Host "     Or use the CLI:" -ForegroundColor White
+    Write-Host "     nubilus-agent.exe configure --api-url `"backend_url/api/v1`" --api-key `"nub_your_key`"" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  3. (Optional) Test the connection:" -ForegroundColor White
+    Write-Host "     nubilus-agent.exe run" -ForegroundColor Yellow
+    Write-Host "     (Press Ctrl+C to stop after verifying it connects)" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  4. Register the Windows service:" -ForegroundColor White
+    Write-Host "     sc.exe create nubilus-agent binPath= `"`\`"C:\Program Files\nubilus\nubilus-agent.exe`\`" service`" start= auto" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "     IMPORTANT: Use 'service' (not 'run') in the binPath." -ForegroundColor Red
+    Write-Host "     Using 'run' will cause Error 1053." -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  5. Start the service:" -ForegroundColor White
     Write-Host "     sc.exe start nubilus-agent" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "  Or run manually:" -ForegroundColor White
-    Write-Host "     nubilus-agent.exe run" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "  4. Check service status:" -ForegroundColor White
+    Write-Host "  6. Check service status:" -ForegroundColor White
     Write-Host "     sc.exe query nubilus-agent" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "For help: nubilus-agent.exe --help" -ForegroundColor Yellow
+    Write-Host "Docs:     https://nubilus-docs.akashtwt.me" -ForegroundColor Yellow
     Write-Host ""
 }
 

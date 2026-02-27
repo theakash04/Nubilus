@@ -21,15 +21,28 @@ curl -sSL https://github.com/theakash04/Nubilus/releases/latest/download/install
 ### Windows (PowerShell as Administrator)
 
 ```powershell
-irm https://github.com/theakash04/Nubilus/releases/latest/download/install.ps1 | iex
+# Download the installer script
+curl.exe -L -o install.ps1 https://github.com/theakash04/Nubilus/releases/latest/download/install.ps1
+
+# Run the installer
+powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
 This will:
 
 1. Download the correct binary to `C:\Program Files\nubilus\`
 2. Create a config at `C:\ProgramData\nubilus\agent.toml`
-3. Register `nubilus-agent` as a Windows Service with auto-restart
-4. Add the install directory to your system PATH
+3. Add the install directory to your system PATH
+
+After installing, register and start the Windows service:
+
+```powershell
+# Register the service (use 'service' argument, not 'run')
+sc.exe create nubilus-agent binPath= "\"C:\Program Files\nubilus\nubilus-agent.exe\" service" start= auto
+
+# Start the service
+sc.exe start nubilus-agent
+```
 
 ### Manual Install
 
