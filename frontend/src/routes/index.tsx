@@ -73,9 +73,14 @@ function App() {
           placeholder="••••••••"
           required
         />
-        <Link to="/forgot-password" className="text-sm text-primary flex items-center justify-end pr-2">
-          Forgot Password?
-        </Link>
+        <div className="flex items-center justify-between px-2">
+          <Link to="/session-management" className="text-sm text-primary">
+            Manage Sessions
+          </Link>
+          <Link to="/forgot-password" className="text-sm text-primary">
+            Forgot Password?
+          </Link>
+        </div>
 
         <Button
           className="w-full flex justify-center py-2.5 shadow-lg shadow-primary-500/20 cursor-pointer"

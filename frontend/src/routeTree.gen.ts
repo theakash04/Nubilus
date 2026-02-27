@@ -11,6 +11,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SessionManagementRouteImport } from './routes/session-management'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AcceptInviteRouteImport } from './routes/accept-invite'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -50,6 +51,11 @@ const AuthenticatedDashboardOrgIdEndpointEndpointIdLazyRouteImport =
 const AuthenticatedDashboardOrgIdDatabaseDatabaseLazyRouteImport =
   createFileRoute('/_authenticated/dashboard/$orgId/database/$database')()
 
+const SessionManagementRoute = SessionManagementRouteImport.update({
+  id: '/session-management',
+  path: '/session-management',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accept-invite': typeof AcceptInviteRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/session-management': typeof SessionManagementRoute
   '/dashboard': typeof AuthenticatedDashboardLazyRoute
   '/profile': typeof AuthenticatedProfileLazyRoute
   '/dashboard/$orgId': typeof AuthenticatedDashboardOrgIdRouteWithChildren
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accept-invite': typeof AcceptInviteRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/session-management': typeof SessionManagementRoute
   '/dashboard': typeof AuthenticatedDashboardLazyRoute
   '/profile': typeof AuthenticatedProfileLazyRoute
   '/dashboard/$orgId/databases': typeof AuthenticatedDashboardOrgIdDatabasesLazyRoute
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/accept-invite': typeof AcceptInviteRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/session-management': typeof SessionManagementRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardLazyRoute
   '/_authenticated/profile': typeof AuthenticatedProfileLazyRoute
   '/_authenticated/dashboard/$orgId': typeof AuthenticatedDashboardOrgIdRouteWithChildren
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accept-invite'
     | '/forgot-password'
+    | '/session-management'
     | '/dashboard'
     | '/profile'
     | '/dashboard/$orgId'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accept-invite'
     | '/forgot-password'
+    | '/session-management'
     | '/dashboard'
     | '/profile'
     | '/dashboard/$orgId/databases'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/accept-invite'
     | '/forgot-password'
+    | '/session-management'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
     | '/_authenticated/dashboard/$orgId'
@@ -305,10 +317,18 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AcceptInviteRoute: typeof AcceptInviteRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  SessionManagementRoute: typeof SessionManagementRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/session-management': {
+      id: '/session-management'
+      path: '/session-management'
+      fullPath: '/session-management'
+      preLoaderRoute: typeof SessionManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forgot-password': {
       id: '/forgot-password'
       path: '/forgot-password'
@@ -495,6 +515,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AcceptInviteRoute: AcceptInviteRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  SessionManagementRoute: SessionManagementRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

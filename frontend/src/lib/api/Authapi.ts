@@ -46,28 +46,32 @@ export async function verifySessionOtp({ otpId, otp }: VerifySessionProps) {
   return res.data.data;
 }
 
-interface ActiveSessionResponse {
-  sessions: {
-    id: string;
-    deviceInfo: string;
-    ipAddress: string;
-    createdAt: string;
-    expiresAt: string;
-    isCurrent: boolean;
-  };
+export interface SessionInfo {
+  id: string;
+  deviceInfo: string;
+  ipAddress: string;
+  createdAt: string;
+  expiresAt: string;
+  isCurrent: boolean;
 }
+
+interface ActiveSessionResponse {
+  sessions: SessionInfo[];
+}
+
+// OTP-based session management (for unauthenticated users)
 export async function getActiveSessions() {
   const token = sessionStorage.getItem("authToken");
 
   if (!token) throw new Error("No auth token");
 
   const res = await api.get<ApiResponse<ActiveSessionResponse>>(
-    "/auth/sessions",
+    "/auth/session",
     {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }
+    },
   );
 
   return res.data.data;
@@ -77,17 +81,26 @@ export async function LogoutSession({ sessionId }: LoguoutSessionProps) {
   const token = sessionStorage.getItem("authToken");
   if (!token) throw new Error("No auth token");
 
-  const res = await api.post<ApiResponse>(
-    "/auth/sessions/logout",
-    { sessionId },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+  const res = await api.delete<ApiResponse>("/auth/session/logout", {
+    data: { sessionId },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   return res.data.data;
+}
+
+// Authenticated session management (for logged-in users, uses cookies)
+export async function getActiveSessionsAuth() {
+  const res =
+    await api.get<ApiResponse<ActiveSessionResponse>>("/auth/sessions");
+  return res.data.data;
+}
+
+export async function revokeSession(sessionId: string) {
+  const res = await api.delete<ApiResponse>(`/auth/sessions/${sessionId}`);
+  return res.data;
 }
 
 export async function getUser(): Promise<ApiResponse<User>> {
@@ -103,10 +116,10 @@ export async function logoutUser(): Promise<ApiResponse> {
 }
 
 export async function acceptInvite(
-  token: string
+  token: string,
 ): Promise<ApiResponse<{ mustSetPassword: boolean }>> {
   const res = await api.get<ApiResponse<{ mustSetPassword: boolean }>>(
-    `/org/invite/accept?token=${token}`
+    `/org/invite/accept?token=${token}`,
   );
   return res.data;
 }
@@ -117,7 +130,7 @@ export async function setPassword(password: string): Promise<ApiResponse> {
 }
 
 export async function sendResetPassOtp(
-  props: SendResetOtpProps
+  props: SendResetOtpProps,
 ): Promise<ApiResponse> {
   const res = await api.post<ApiResponse>("/auth/reset-password/send", props);
   return res.data;
@@ -127,17 +140,17 @@ interface VerifyResetOtpRes {
   token: string;
 }
 export async function verifyResetPassOtp(
-  props: VerifyResetOtpProps
+  props: VerifyResetOtpProps,
 ): Promise<ApiResponse<VerifyResetOtpRes>> {
   const res = await api.post<ApiResponse<VerifyResetOtpRes>>(
     "/auth/reset-password/verify",
-    props
+    props,
   );
   return res.data;
 }
 
 export async function resetPassword(
-  props: ResetPasswordProps
+  props: ResetPasswordProps,
 ): Promise<ApiResponse> {
   const res = await api.post<ApiResponse>("/auth/reset-password", props);
   return res.data;
