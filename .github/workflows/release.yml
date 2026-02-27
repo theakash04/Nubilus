@@ -120,9 +120,54 @@ jobs:
           name: ${{ matrix.binary_name }}
           path: agent/${{ matrix.binary_name }}
 
+  build-windows:
+    name: Build Windows ${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          # Windows x86_64
+          - target: x86_64-pc-windows-msvc
+            arch: amd64
+            binary_name: nubilus-agent-windows-amd64.exe
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Sync version from git tag
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          Write-Host "Syncing Cargo.toml version to $version"
+          (Get-Content agent/Cargo.toml) -replace '^version = ".*"', "version = `"$version`"" | Set-Content agent/Cargo.toml
+          Get-Content agent/Cargo.toml | Select-Object -First 5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build release binary
+        run: |
+          cd agent
+          cargo build --release --target ${{ matrix.target }}
+
+      - name: Rename binary
+        shell: pwsh
+        run: |
+          cd agent
+          Copy-Item "target/${{ matrix.target }}/release/nubilus-agent.exe" "${{ matrix.binary_name }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary_name }}
+          path: agent/${{ matrix.binary_name }}
+
   release:
     name: Create Release
-    needs: [build-linux, build-macos]
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -150,6 +195,7 @@ jobs:
             binaries/*
             agent/install.sh
             agent/uninstall.sh
+            agent/install.ps1
           generate_release_notes: true
           draft: false
         env:

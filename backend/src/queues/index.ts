@@ -1,6 +1,10 @@
 import { emailWorker } from "./email";
 import { alertsWorker } from "./alerts";
-import { monitoringWorker, initializeMonitoringSchedules } from "./monitoring";
+import {
+  monitoringWorker,
+  initializeMonitoringSchedules,
+  startServerOfflineChecker,
+} from "./monitoring";
 
 export async function initializeWorkers(): Promise<void> {
   console.log("Queue workers initialized");
@@ -10,6 +14,9 @@ export async function initializeWorkers(): Promise<void> {
 
   // Initialize monitoring schedules for all enabled endpoints/databases
   await initializeMonitoringSchedules();
+
+  // Start periodic checker for offline servers (heartbeat timeout)
+  startServerOfflineChecker();
 }
 
 export { addEmailJob, emailQueue } from "./email";

@@ -100,11 +100,10 @@ function RouteComponent() {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id as typeof activeTab)}
-                  className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
-                    activeTab === item.id
+                  className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors cursor-pointer ${activeTab === item.id
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   <item.icon
                     className={`shrink-0 -ml-1 mr-3 h-4 w-4 ${activeTab === item.id ? "text-primary" : "text-muted-foreground"}`}

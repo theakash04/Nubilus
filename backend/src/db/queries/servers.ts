@@ -147,3 +147,30 @@ export async function serverTrends(orgId: string): Promise<{ hour: Date; count: 
 
   return serverTrends;
 }
+
+/**
+ * Find servers that have exceeded their org's offline threshold
+ * but are NOT already marked as 'offline'.
+ */
+export async function getNewlyOfflineServers(): Promise<
+  { id: string; name: string; org_id: string; last_seen_at: Date }[]
+> {
+  const servers = await sql<{ id: string; name: string; org_id: string; last_seen_at: Date }[]>`
+    SELECT s.id, s.name, s.org_id, s.last_seen_at
+    FROM servers s
+    JOIN org_settings os ON os.org_id = s.org_id
+    WHERE s.status != 'offline'
+      AND s.last_seen_at IS NOT NULL
+      AND s.last_seen_at < NOW() - (os.server_offline_threshold_seconds || ' seconds')::interval
+  `;
+  return servers;
+}
+
+/**
+ * Mark a server as offline
+ */
+export async function markServerOffline(serverId: string): Promise<void> {
+  await sql`
+    UPDATE servers SET status = 'offline' WHERE id = ${serverId}::uuid
+  `;
+}

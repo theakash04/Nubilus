@@ -17,6 +17,17 @@ pub struct DiskMetrics {
     pub write_bytes: i64,
 }
 
+/// Check if this is the primary/root disk partition
+fn is_root_partition(mount_point: &std::path::Path) -> bool {
+    if cfg!(target_os = "windows") {
+        // On Windows, look for C:\ as the primary disk
+        mount_point == std::path::Path::new("C:\\")
+    } else {
+        // On Unix, look for /
+        mount_point == std::path::Path::new("/")
+    }
+}
+
 /// Collect disk metrics from the system
 pub fn collect(_system: &System) -> DiskMetrics {
     let disks = Disks::new_with_refreshed_list();
@@ -24,13 +35,24 @@ pub fn collect(_system: &System) -> DiskMetrics {
     let mut total: u64 = 0;
     let mut available: u64 = 0;
 
-    // Only report the root (/) partition - this gives the most accurate
+    // Only report the root/primary partition - this gives the most accurate
     // representation of available disk space for most use cases
     for disk in disks.list() {
-        if disk.mount_point() == std::path::Path::new("/") {
+        if is_root_partition(disk.mount_point()) {
             total = disk.total_space();
             available = disk.available_space();
             break;
+        }
+    }
+
+    // Fallback: if no root partition found (e.g. non-standard mount),
+    // use the largest disk
+    if total == 0 {
+        for disk in disks.list() {
+            if disk.total_space() > total {
+                total = disk.total_space();
+                available = disk.available_space();
+            }
         }
     }
 
@@ -42,7 +64,7 @@ pub fn collect(_system: &System) -> DiskMetrics {
         0.0
     };
 
-    // Get disk I/O stats from /proc/diskstats on Linux
+    // Get disk I/O stats (platform-specific)
     let (read_bytes, write_bytes) = read_disk_io_stats();
     
     DiskMetrics {
@@ -126,9 +148,20 @@ fn read_disk_io_stats() -> (i64, i64) {
     )
 }
 
-/// Fallback for non-Linux systems
-#[cfg(not(target_os = "linux"))]
+/// Windows disk I/O stats using sysinfo's Disks (basic fallback)
+/// Full WMI-based I/O stats would require the `wmi` crate.
+#[cfg(target_os = "windows")]
 fn read_disk_io_stats() -> (i64, i64) {
-    // Not supported on macOS/Windows via this method
+    // sysinfo doesn't expose per-disk I/O on Windows.
+    // For detailed I/O stats, the `wmi` crate could query
+    // Win32_PerfRawData_PerfDisk_PhysicalDisk, but for now
+    // we return 0 (same as macOS) to keep dependencies minimal.
+    (0, 0)
+}
+
+/// Fallback for other platforms (macOS, etc.)
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+fn read_disk_io_stats() -> (i64, i64) {
+    // Not supported on macOS via this method
     (0, 0)
 }

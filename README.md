@@ -11,7 +11,7 @@ Nubilus is a self-hosted monitoring solution that helps you track the health and
 
 - **Dashboard** — React-based web interface
 - **Backend API** — Node.js/Express with PostgreSQL
-- **Agent** — Lightweight Rust binary for collecting metrics
+- **Agent** — Lightweight Rust binary for collecting metrics (Linux, macOS, Windows)
 
 ## Quick Start
 

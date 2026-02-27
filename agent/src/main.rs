@@ -421,13 +421,16 @@ async fn update_agent() -> Result<()> {
         ("linux", "aarch64") => ("linux", "arm64"),
         ("macos", "x86_64") => ("darwin", "amd64"),
         ("macos", "aarch64") => ("darwin", "arm64"),
+        ("windows", "x86_64") => ("windows", "amd64"),
+        ("windows", "aarch64") => ("windows", "arm64"),
         _ => {
             error!("Unsupported platform: {}-{}", os, arch);
             anyhow::bail!("Unsupported platform: {}-{}", os, arch);
         }
     };
 
-    let binary_name = format!("nubilus-agent-{}-{}", os_name, arch_name);
+    let extension = if os == "windows" { ".exe" } else { "" };
+    let binary_name = format!("nubilus-agent-{}-{}{}", os_name, arch_name, extension);
     let download_url = format!("{}/{}", GITHUB_RELEASE_URL, binary_name);
     
     info!("Downloading {} ...", binary_name);
@@ -468,20 +471,43 @@ async fn update_agent() -> Result<()> {
         std::fs::set_permissions(&temp_path, perms)?;
     }
 
-    // Delete old binary and install new one
-    std::fs::remove_file(&current_exe)
-        .context("Failed to remove old binary. Try running with sudo.")?;
-    
-    std::fs::rename(&temp_path, &current_exe)
-        .context("Failed to install new binary")?;
+    if cfg!(target_os = "windows") {
+        // On Windows, we can't delete a running binary.
+        // Rename the old one out of the way, then move the new one in.
+        let backup_path = current_exe.with_extension("old.exe");
+        let _ = std::fs::remove_file(&backup_path); // clean up previous backup
+        std::fs::rename(&current_exe, &backup_path)
+            .context("Failed to rename old binary. Try running as Administrator.")?;
+        std::fs::rename(&temp_path, &current_exe)
+            .context("Failed to install new binary")?;
+        // Old binary will be cleaned up on next update or reboot
+    } else {
+        // On Unix, delete and replace
+        std::fs::remove_file(&current_exe)
+            .context("Failed to remove old binary. Try running with sudo.")?;
+        std::fs::rename(&temp_path, &current_exe)
+            .context("Failed to install new binary")?;
+    }
 
     info!("✓ Update successful!");
     info!("");
     info!("The agent has been updated. Please restart the service:");
-    info!("Restarting nubilus-agent service...");
-    let _ = Command::new("systemctl")
-        .args(["restart", "nubilus-agent"])
-        .output();
+
+    if cfg!(target_os = "windows") {
+        info!("Restarting nubilus-agent service...");
+        let _ = Command::new("sc.exe")
+            .args(["stop", "nubilus-agent"])
+            .output();
+        std::thread::sleep(Duration::from_secs(2));
+        let _ = Command::new("sc.exe")
+            .args(["start", "nubilus-agent"])
+            .output();
+    } else {
+        info!("Restarting nubilus-agent service...");
+        let _ = Command::new("systemctl")
+            .args(["restart", "nubilus-agent"])
+            .output();
+    }
     info!("");
     info!("Or if running manually, restart the agent.");
 
@@ -490,9 +516,19 @@ async fn update_agent() -> Result<()> {
 
 /// Uninstall the agent from this system
 fn uninstall_agent(keep_config: bool) -> Result<()> {
-    use std::process::Command;
 
     info!("Uninstalling Nubilus Agent...");
+
+    if cfg!(target_os = "windows") {
+        uninstall_windows(keep_config)
+    } else {
+        uninstall_unix(keep_config)
+    }
+}
+
+/// Unix-specific uninstall (systemd + bash cleanup)
+fn uninstall_unix(keep_config: bool) -> Result<()> {
+    use std::process::Command;
 
     // Check if running as root
     if !nix_check_root() {
@@ -566,6 +602,63 @@ fn uninstall_agent(keep_config: bool) -> Result<()> {
     info!("");
     info!("To reinstall, run:");
     info!("  curl -sSL https://github.com/theakash04/Nubilus/releases/latest/download/install.sh | sudo bash");
+
+    Ok(())
+}
+
+/// Windows-specific uninstall (sc.exe service + scheduled task cleanup)
+fn uninstall_windows(keep_config: bool) -> Result<()> {
+    use std::process::Command;
+
+    // 1. Stop and delete the Windows Service (if it exists)
+    info!("Stopping Windows service...");
+    let _ = Command::new("sc.exe")
+        .args(["stop", "nubilus-agent"])
+        .output();
+
+    std::thread::sleep(Duration::from_secs(2));
+
+    let _ = Command::new("sc.exe")
+        .args(["delete", "nubilus-agent"])
+        .output();
+
+    // 2. Remove configuration (unless --keep-config)
+    let config_dir = "C:\\ProgramData\\nubilus";
+    if !keep_config {
+        if std::path::Path::new(config_dir).exists() {
+            info!("Removing configuration directory...");
+            std::fs::remove_dir_all(config_dir).ok();
+        }
+    } else {
+        info!("Keeping configuration files at {}", config_dir);
+    }
+
+    // 3. Schedule self-deletion via a cmd script
+    let current_exe = std::env::current_exe()
+        .unwrap_or_else(|_| std::path::PathBuf::from("C:\\Program Files\\nubilus\\nubilus-agent.exe"));
+
+    info!("Removing binary: {}", current_exe.display());
+
+    let cleanup_bat = std::env::temp_dir().join("nubilus-cleanup.bat");
+    let script_content = format!(
+        "@echo off\r\ntimeout /t 2 /nobreak >nul\r\ndel /f \"{}\"\r\ndel /f \"%~f0\"\r\n",
+        current_exe.display()
+    );
+
+    std::fs::write(&cleanup_bat, script_content).ok();
+
+    let _ = Command::new("cmd.exe")
+        .args(["/C", "start", "/min", "", &cleanup_bat.to_string_lossy()])
+        .spawn();
+
+    info!("");
+    info!("✓ Nubilus Agent has been uninstalled!");
+    if keep_config {
+        info!("  Configuration preserved at {}", config_dir);
+    }
+    info!("");
+    info!("To reinstall, run (in PowerShell as Administrator):");
+    info!("  irm https://github.com/theakash04/Nubilus/releases/latest/download/install.ps1 | iex");
 
     Ok(())
 }
