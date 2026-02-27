@@ -1,12 +1,14 @@
 import { Router } from "express";
 import {
   getActiveSessions,
+  getActiveSessionsAuth,
   getUser,
   login,
   logout,
   logoutFromSession,
   requestSessionManagementOTP,
   resetPassword,
+  revokeSessionAuth,
   sendResetPassOtp,
   setPassword,
   verifyResetPassOtp,
@@ -29,5 +31,7 @@ router.post("/reset-password", resetPassword);
 router.get("/user", authorize, getUser);
 router.get("/logout", authorize, logout);
 router.post("/set-password", authorize, setPassword);
+router.get("/sessions", authorize, getActiveSessionsAuth);
+router.delete("/sessions/:id", authorize, revokeSessionAuth);
 
 export default router;

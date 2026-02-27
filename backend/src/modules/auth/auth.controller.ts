@@ -232,6 +232,61 @@ export async function logoutFromSession(req: Request, res: Response) {
   sendResponse(res, 200, "Session terminated successfully");
 }
 
+// ── Authenticated session management (for logged-in users) ──
+
+export async function getActiveSessionsAuth(req: Request, res: Response) {
+  const userId = req.user?.userId;
+
+  if (!userId) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  const activeSessions = await findAllRefreshTokenByUserId(userId);
+
+  // Identify the current session by matching the refresh token
+  const currentRefreshToken = req.cookies?.refreshToken;
+  let currentTokenHash: string | null = null;
+  if (currentRefreshToken) {
+    currentTokenHash = sha256Hex(currentRefreshToken);
+  }
+
+  const sessionData = activeSessions.map((session: any) => ({
+    id: session.id,
+    deviceInfo: session.user_agent || "Unknown Device",
+    ipAddress: session.ip_address,
+    createdAt: session.created_at,
+    expiresAt: session.expires_at,
+    isCurrent: currentTokenHash ? session.token_hash === currentTokenHash : false,
+  }));
+
+  sendResponse(res, 200, "Active sessions retrieved", { sessions: sessionData });
+}
+
+export async function revokeSessionAuth(req: Request, res: Response) {
+  const userId = req.user?.userId;
+  const { id } = req.params;
+
+  if (!userId) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  if (!id) {
+    throw new AppError("Session ID is required", 400);
+  }
+
+  // Verify session belongs to user
+  const activeSessions = await findAllRefreshTokenByUserId(userId);
+  const session = activeSessions.find((s: any) => s.id === id);
+
+  if (!session) {
+    throw new AppError("Session not found or doesn't belong to you", 404);
+  }
+
+  await revokeRefreshToken(session.id);
+
+  sendResponse(res, 200, "Session terminated successfully");
+}
+
 export async function getUser(req: Request, res: Response) {
   const userId = req.user?.userId;
 
