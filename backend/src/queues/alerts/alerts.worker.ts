@@ -85,9 +85,9 @@ export const alertsWorker = new Worker<AlertNotificationJobData>(
           <p style="color: #666; font-size: 12px;">
             You received this because you're subscribed to alert notifications for this organization.
             <br>
-            <em>Next alert for this target will be sent after ${
+            <em>Next alert for this target will be sent after ${Math.round(
               ALERT_COOLDOWN_SECONDS / 60
-            } minutes cooldown.</em>
+            )} minutes cooldown.</em>
           </p>
         `,
       });

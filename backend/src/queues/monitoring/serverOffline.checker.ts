@@ -27,7 +27,13 @@ async function checkForOfflineServers(): Promise<void> {
         serverId: server.id,
         type: "server_offline",
         title: "Server Offline",
-        message: `Server "${server.name}" has stopped sending heartbeats and is now considered offline. Last seen: ${new Date(server.last_seen_at).toUTCString()}`,
+        message: `Server "${server.name}" has stopped sending heartbeats and is now considered offline. Last seen: ${new Date(
+          server.last_seen_at
+        ).toLocaleString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          dateStyle: "medium",
+          timeStyle: "short",
+        })}`,
       });
     }
 
