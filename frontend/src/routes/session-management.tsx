@@ -83,6 +83,10 @@ function SessionManagement() {
     mutationFn: requestSessionManagementOTP,
     onSuccess: (data) => {
       setError("");
+      if (!data.data?.otpId) {
+        setMessage("If this email is registered, you will receive an OTP.");
+        return;
+      }
       setMessage("OTP sent! Please check your email inbox.");
       setOtpId(data.data.otpId);
       setStep(Step.OTP);
