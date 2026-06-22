@@ -24,7 +24,7 @@ cd Nubilus
 docker-compose up -d
 ```
 
-For detailed setup instructions, visit the **[Documentation](https://nubilus-docs.akashtwt.me)**
+For detailed setup instructions, visit the **[Documentation](https://nubilus-docs.akashtwt.in)**
 
 ## Tech Stack
 
